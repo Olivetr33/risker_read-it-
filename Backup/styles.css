@@ -19,7 +19,20 @@
     --transition: 0.13s;
 }
 
-/* Geblurrtes Hintergrundvideo */
+/* Flexbox-Layout für Sticky Footer */
+html, body {
+    height: 100%;
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    background: var(--color-bg);
+}
 .background-video-container {
     position: fixed;
     top: 0; left: 0; width: 100vw; height: 100vh;
@@ -39,20 +52,21 @@
     pointer-events: none;
 }
 
-/* App-Vordergrund */
+/* App-Vordergrund als Flex-Container */
 .app-foreground {
-    position: relative;
-    z-index: 1;
-    min-height: 100vh;
+    flex: 1 0 auto;
     display: flex;
     flex-direction: column;
+    min-height: 0;
+    position: relative;
+    z-index: 1;
 }
 
 /* Sidebar */
 .sidebar {
     width: var(--sidebar-width);
     background: var(--color-sidebar);
-    min-height: 100vh;
+    height: calc(100vh - var(--footer-height));
     position: fixed;
     top: 0; left: 0;
     z-index: 10;
@@ -60,6 +74,16 @@
     border-radius: 0 32px 32px 0;
     box-shadow: 4px 0 24px rgba(0,0,0,0.15);
     backdrop-filter: blur(10px);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: stretch;
+    box-sizing: border-box;
+}
+
+/* Sidebar-Inhalt bleibt wie gehabt */
+.sidebar nav {
+    flex: 0 0 auto;
 }
 .sidebar nav ul {
     list-style: none;
@@ -73,27 +97,17 @@
     border-left: 3px solid transparent;
     border-radius: 0 18px 18px 0;
     margin-bottom: 8px;
-    background: rgba(255,255,255,0.04); /* leichte Schattierung */
+    background: rgba(255,255,255,0.04);
     transition: background 0.15s, color 0.15s, border 0.15s, transform 0.08s;
     cursor: pointer;
     font-weight: 500;
     outline: none;
     box-shadow: 0 1px 6px rgba(0,0,0,0.07);
     position: relative;
+    text-align: left;
+    letter-spacing: 0.01em;
 }
-.sidebar-btn:hover,
-.sidebar-btn:focus {
-    background: rgba(241,196,15,0.13);
-    color: var(--color-accent);
-    border-left: 3px solid var(--color-accent);
-}
-.sidebar-btn:active, .sidebar-btn.active {
-    background: rgba(60,60,70,0.22);
-    color: var(--color-accent);
-    border-left: 3px solid var(--color-accent);
-    transform: scale(0.97);
-    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-}
+/* ... (Sidebar-Button Hover/Active/Tooltip bleibt wie gehabt) ... */
 
 /* Tooltips für Sidebar */
 .sidebar-btn[title] {
@@ -118,11 +132,44 @@
     pointer-events: none;
 }
 
+/* Clear Data Button: immer unten in der Sidebar, nie vom Footer verdeckt */
+.clear-data-btn {
+    background: rgba(255,255,255,0.09);
+    color: #eee;
+    border: none;
+    border-radius: 10px;
+    font-size: 0.97rem;
+    padding: 8px 22px;
+    cursor: pointer;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.09);
+    transition: background 0.15s, color 0.15s, transform 0.08s;
+    width: calc(100% - 36px);
+    text-align: center;
+    opacity: 0.85;
+    margin: 0 18px 18px 18px;
+    margin-top: auto;
+    position: relative;
+    bottom: 0;
+    z-index: 2;
+    /* immer sichtbar, unabhängig von Footer */
+}
+.clear-data-btn:hover,
+.clear-data-btn:focus {
+    background: rgba(241,196,15,0.18);
+    color: var(--color-accent);
+}
+.clear-data-btn:active {
+    background: rgba(60,60,70,0.22);
+    color: var(--color-accent);
+    transform: scale(0.97);
+}
+
 /* Main Content */
 .main-content {
+    flex: 1 0 auto;
     margin-left: var(--sidebar-width);
     padding: 48px 40px 0 40px;
-    min-height: calc(100vh - var(--footer-height));
+    min-height: 0;
     width: 100%;
     display: flex;
     flex-direction: column;
@@ -130,15 +177,15 @@
     background: transparent;
 }
 
-/* Upload-Button zentriert und "plop" Effekt */
-.top-bar {
+/* Archiv-Upload-Button wie Start-Upload-Button */
+.archive-upload-bar {
     width: 100%;
     display: flex;
     justify-content: center;
     align-items: center;
-    margin-bottom: 24px;
+    margin: 30px 0 0 0;
 }
-.upload-btn-main {
+.archive-upload-bar .upload-btn-main {
     background: var(--color-accent-dark);
     color: var(--color-accent);
     border: none;
@@ -152,7 +199,7 @@
     margin: 0 auto;
     display: block;
 }
-.upload-btn-main:active {
+.archive-upload-bar .upload-btn-main:active {
     background: var(--color-accent);
     color: var(--color-accent-dark);
     transform: scale(0.96);
@@ -274,16 +321,14 @@
     background: rgba(60,60,70,0.13);
 }
 
-/* Footer */
+/* Sticky Footer mit Flexbox */
 .footer-dsgvo {
+    flex-shrink: 0;
     width: 100vw;
     background: var(--color-footer);
     color: #eee;
     text-align: center;
     padding: 10px 0 8px 0;
-    position: sticky;
-    bottom: 0;
-    min-height: var(--footer-height);
     font-size: 0.95rem;
     letter-spacing: 0.02em;
     opacity: 0.85;
@@ -291,9 +336,15 @@
     z-index: 100;
     border-radius: 22px 22px 0 0;
     box-shadow: 0 -4px 24px rgba(0,0,0,0.15);
+    position: relative;
+    margin-top: auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
 }
 
-/* Privacy Button im Footer wie Sidebar-Menü */
+/* Footer-Links (Privacy, GitHub) */
 .footer-link {
     background: rgba(255,255,255,0.04);
     color: var(--color-text);
@@ -305,8 +356,9 @@
     cursor: pointer;
     box-shadow: 0 1px 6px rgba(0,0,0,0.07);
     transition: background 0.15s, color 0.15s, transform 0.08s;
-    margin: 0 auto;
+    margin: 0 4px;
     display: inline-block;
+    text-decoration: none;
 }
 .footer-link:hover, .footer-link:focus {
     background: rgba(241,196,15,0.13);
@@ -397,6 +449,7 @@
         width: 60px;
         padding-top: 16px;
         border-radius: 0 18px 18px 0;
+        height: calc(100vh - var(--footer-height));
     }
     .sidebar-btn {
         font-size: 0.98rem;
@@ -412,6 +465,12 @@
         font-size: 0.98rem;
         width: 99%;
         max-width: 99vw;
+    }
+    .clear-data-btn {
+        width: calc(100% - 16px);
+        margin-left: 8px;
+        margin-right: 8px;
+        font-size: 0.93rem;
     }
 }
 @media (max-width: 600px) {

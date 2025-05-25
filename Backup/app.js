@@ -1,15 +1,24 @@
-// DSGVO Popup-Text
+// Privacy Popup Text (English)
 const privacyText = `
-<h3>Privacy Policy</h3>
-<p>This tool is a purely local application. No data is transmitted to third parties or external servers. All files and session data remain on your device and can be deleted at any time in your local start directory.</p>
-<p><b>GDPR compliance:</b> The application is designed to be fully GDPR-compliant. No personal data is processed outside your device. No cookies or trackers are used.</p>
+<h3>Privacy</h3>
+<p>
+    This application is a purely local web app. <b>No data</b> is transmitted to third parties or external servers.<br>
+    All files and session data remain on your device and can be deleted at any time.
+</p>
+<p>
+    <b>GDPR compliance:</b> The application is designed to be fully GDPR-compliant.<br>
+    No personal data is processed outside your device. No cookies or trackers are used.
+</p>
+<p style="color:#b3b3b3;font-size:0.98rem;">
+    Contact for privacy inquiries: <a href="mailto:saberton24@outlook.de">saberton24@outlook.de</a>
+</p>
 `;
 
 function showPrivacy() {
     document.getElementById('popupInner').innerHTML = privacyText;
     document.getElementById('popupBg').style.display = 'flex';
 }
-function hidePopup() {
+function hidePrivacy() {
     document.getElementById('popupBg').style.display = 'none';
 }
 
@@ -22,39 +31,12 @@ let erledigtRows = [];
 let selectedLCSM = null;
 let archiveMode = false;
 
-// Session-Handling (nur noch Migrate, Save entfernt)
-function loadSessionFromFile(callback) {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json';
-    input.onchange = function(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = function(evt) {
-            try {
-                const session = JSON.parse(evt.target.result);
-                callback(session);
-            } catch (err) {
-                alert("Invalid session file.");
-            }
-        };
-        reader.readAsText(file);
-    };
-    input.click();
-}
-function mergeSessionWithData(session, data) {
-    const erledigtIds = new Set((session || []).map(row =>
-        row["Customer Number"] || row["Customer ID"]));
-    return data.filter(row =>
-        !erledigtIds.has(row["Customer Number"] || row["Customer ID"])
-    );
-}
-
 // Sidebar Actions
 window.goToStart = function() {
     archiveMode = false;
+    document.getElementById('archiveUploadBar').style.display = 'none';
     renderTable(filteredData);
+    updateTableVisibility();
 };
 window.showLCSMDialog = function() {
     showLCSMSelection();
@@ -62,13 +44,8 @@ window.showLCSMDialog = function() {
 window.showArchive = function() {
     archiveMode = true;
     renderTable(erledigtRows);
-};
-window.migrateSession = function() {
-    loadSessionFromFile(session => {
-        erledigtRows = session;
-        filteredData = mergeSessionWithData(erledigtRows, excelData);
-        renderTable(filteredData);
-    });
+    document.getElementById('archiveUploadBar').style.display = 'block';
+    updateTableVisibility();
 };
 window.logout = function() {
     window.location = "index.html";
@@ -76,23 +53,24 @@ window.logout = function() {
 
 // File Upload
 document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('fileInput').addEventListener('change', handleFile, false);
+    const fileInput = document.getElementById('fileInput');
+    fileInput.addEventListener('change', handleFile, false);
 
-    // Sidebar-Button-Events
+    document.getElementById('uploadDataBtn').onclick = function() {
+        fileInput.value = "";
+        fileInput.click();
+    };
+
     document.getElementById('startBtn').onclick = window.goToStart;
     document.getElementById('changeLcsmBtn').onclick = window.showLCSMDialog;
     document.getElementById('archiveBtn').onclick = window.showArchive;
-    document.getElementById('migrateBtn').onclick = window.migrateSession;
     document.getElementById('logoutBtn').onclick = window.logout;
+    document.getElementById('clearDataBtn').onclick = handleClearData;
 
-    // Upload-Button beim Start anzeigen
-    document.getElementById('uploadBtnMain').style.display = "block";
-
-    // Popup/Dialogs schließen per Klick auf Overlay
     const popupBg = document.getElementById('popupBg');
     if (popupBg) {
         popupBg.addEventListener('click', function(e){
-            if(e.target === this) hidePopup();
+            if(e.target === this) hidePrivacy();
         });
     }
     const dialogBg = document.getElementById('dialogBg');
@@ -101,6 +79,8 @@ document.addEventListener('DOMContentLoaded', function() {
             if(e.target === this) this.style.display = 'none';
         });
     }
+
+    updateTableVisibility();
 });
 
 function handleFile(e) {
@@ -114,17 +94,40 @@ function handleFile(e) {
         const worksheet = workbook.Sheets[sheet];
         const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
         headers = json[0];
-        excelData = json.slice(1).map(row => {
+        let rawData = json.slice(1).map(row => {
             let obj = {};
             headers.forEach((h,i) => obj[h] = row[i]);
             return obj;
         });
+        // Aggregation by customer
+        excelData = aggregateDataByCustomer(rawData);
         filteredData = mergeSessionWithData(erledigtRows, excelData);
         showLCSMSelection();
         renderSortControls();
-        document.getElementById('uploadBtnMain').style.display = "none";
+        document.getElementById('archiveUploadBar').style.display = archiveMode ? 'block' : 'none';
+        updateTableVisibility();
     };
     reader.readAsArrayBuffer(file);
+}
+
+// Aggregation: group by customer and sum risk values
+function aggregateDataByCustomer(data) {
+    const grouped = {};
+    data.forEach(row => {
+        const key = row["Customer Number"] || row["Customer ID"];
+        if (!key) return;
+        if (!grouped[key]) {
+            grouped[key] = {...row};
+            ["Contact Risk", "Update Risk", "Value Risk", "Contract Risk", "Objective Risk", "Total Risk", "ARR"].forEach(field => {
+                grouped[key][field] = parseFloat(row[field]) || 0;
+            });
+        } else {
+            ["Contact Risk", "Update Risk", "Value Risk", "Contract Risk", "Objective Risk", "Total Risk", "ARR"].forEach(field => {
+                grouped[key][field] += parseFloat(row[field]) || 0;
+            });
+        }
+    });
+    return Object.values(grouped);
 }
 
 // LCSM Dialog
@@ -154,7 +157,9 @@ function filterByLCSM() {
         row["LCSM"] === selectedLCSM
     );
     archiveMode = false;
+    document.getElementById('archiveUploadBar').style.display = 'none';
     renderTable(filteredData);
+    updateTableVisibility();
 }
 
 // Table Rendering
@@ -162,6 +167,7 @@ function renderTable(data) {
     const table = document.getElementById('dataTable');
     if (!headers.length || !data.length) {
         table.innerHTML = '';
+        updateTableVisibility();
         return;
     }
     const showCols = headers.filter(h =>
@@ -182,13 +188,14 @@ function renderTable(data) {
                     ${showCols.map(h => `<td>${row[h] ?? ''}</td>`).join('')}
                     <td>${topRisk.badges.join(' ')}</td>
                     <td>
-                        <button class="copy-btn" title="Copy" onclick="navigator.clipboard.writeText('${row["Customer Number"] || ""}')">📋</button>
-                        ${archiveMode ? '' : `<button class="complete-btn" onclick="removeRow('${row["Customer Number"] || ""}')">Done</button>`}
+                        <button class="copy-btn" title="Copy customer number to clipboard" onclick="navigator.clipboard.writeText('${row["Customer Number"] || ""}')">📑</button>
+                        ${archiveMode ? '' : `<button class="complete-btn" title="Mark as done" onclick="removeRow('${row["Customer Number"] || ""}')">Done</button>`}
                     </td>
                 </tr>`;
             }).join('')}
         </tbody>
     `;
+    updateTableVisibility();
 }
 
 // Risk Badges
@@ -219,22 +226,22 @@ window.removeRow = function(customerNum) {
         (row["Customer Number"] || row["Customer ID"] || "") != customerNum
     );
     renderTable(filteredData);
+    updateTableVisibility();
 };
 
-// Sort Controls (modern, ohne LCSM-Filter)
+// Sort Controls
 function renderSortControls() {
     const sticky = document.getElementById('stickySort');
     sticky.innerHTML = `
         <div class="sort-controls" id="sortControls">
             <label for="sortColumn">Sort by:</label>
             <select class="sort-select" id="sortColumn"></select>
-            <button class="sort-btn" id="sortAsc" title="Aufsteigend sortieren">▲</button>
-            <button class="sort-btn active" id="sortDesc" title="Absteigend sortieren">▼</button>
+            <button class="sort-btn" id="sortAsc" title="Sort ascending">▲</button>
+            <button class="sort-btn active" id="sortDesc" title="Sort descending">▼</button>
         </div>
     `;
     const sortColumn = document.getElementById('sortColumn');
     sortColumn.innerHTML = '';
-    // LCSM NICHT als Filteroption anzeigen
     headers.filter(h => h !== "LCSM").forEach(h => {
         const opt = document.createElement('option');
         opt.value = h;
@@ -263,11 +270,9 @@ function updateSortButtons() {
 }
 function sortAndRenderTable() {
     let sorted = [...filteredData];
-    // Natürliche Sortierung für Zahlen und Strings
     sorted.sort((a, b) => {
         let aVal = a[currentSort.column];
         let bVal = b[currentSort.column];
-        // numerisch sortieren, wenn beide Werte Zahlen sind
         if(!isNaN(parseFloat(aVal)) && !isNaN(parseFloat(bVal))) {
             aVal = parseFloat(aVal);
             bVal = parseFloat(bVal);
@@ -279,4 +284,71 @@ function sortAndRenderTable() {
         }
     });
     renderTable(sorted);
+}
+
+// Show/hide table and filter bar together, also for archive
+function updateTableVisibility() {
+    const tableContainer = document.getElementById('tableContainer');
+    const stickySort = document.getElementById('stickySort');
+    let showTable = false;
+    if (archiveMode) {
+        showTable = erledigtRows.length > 0 && headers.length > 0;
+    } else {
+        showTable = headers.length && filteredData.length;
+    }
+    tableContainer.style.display = showTable ? '' : 'none';
+    stickySort.style.display = showTable ? '' : 'none';
+}
+
+// Clear Data Button logic with English archive query
+function handleClearData() {
+    if (!headers.length && !erledigtRows.length) {
+        alert("No data loaded.");
+        return;
+    }
+    if (erledigtRows.length) {
+        const keepArchive = confirm(
+            "Do you want to keep the archive (completed rows)?\n\n" +
+            "OK = Keep archive, only clear table data\n" +
+            "Cancel = Delete everything including archive"
+        );
+        if (keepArchive) {
+            // Only clear table data, keep archive
+            excelData = [];
+            filteredData = [];
+            selectedLCSM = null;
+            archiveMode = false;
+            renderTable([]);
+            updateTableVisibility();
+        } else {
+            // Delete everything
+            excelData = [];
+            headers = [];
+            filteredData = [];
+            erledigtRows = [];
+            selectedLCSM = null;
+            archiveMode = false;
+            renderTable([]);
+            updateTableVisibility();
+        }
+    } else {
+        if (confirm("Clear all loaded data from the table?")) {
+            excelData = [];
+            headers = [];
+            filteredData = [];
+            selectedLCSM = null;
+            archiveMode = false;
+            renderTable([]);
+            updateTableVisibility();
+        }
+    }
+}
+
+// Merge Session Helper
+function mergeSessionWithData(session, data) {
+    const erledigtIds = new Set((session || []).map(row =>
+        row["Customer Number"] || row["Customer ID"]));
+    return data.filter(row =>
+        !erledigtIds.has(row["Customer Number"] || row["Customer ID"])
+    );
 }

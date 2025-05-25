@@ -6,6 +6,106 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="styles.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+      html, body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        min-height: 100vh;
+      }
+      body {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+      .app-foreground {
+        flex: 1 0 auto;
+        display: flex;
+        flex-direction: row;
+        min-height: 0;
+        min-width: 0;
+        position: relative;
+        z-index: 1;
+      }
+      .sidebar {
+        flex: 0 0 220px;
+        min-width: 180px;
+        background: #23272b;
+        z-index: 2;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        padding-bottom: 70px; /* Platz für Footer */
+      }
+      .clear-data-btn {
+        margin-top: auto;
+        margin-bottom: 16px;
+        width: 90%;
+        align-self: center;
+        position: static;
+      }
+      .main-content {
+        flex: 1 1 0;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        min-height: 0;
+        padding: 0;
+      }
+      .table-container {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow: auto;
+        padding: 24px 16px;
+      }
+      .footer-dsgvo {
+        flex-shrink: 0;
+        background: #23272b;
+        color: #ffd221;
+        text-align: center;
+        font-size: 1.13rem;
+        padding: 26px 0 26px 0;
+        border-top: 2px solid #393a40;
+        letter-spacing: 0.04em;
+        width: 100%;
+        box-shadow: 0 -2px 12px rgba(0,0,0,0.08);
+        position: relative;
+        z-index: 2;
+      }
+      .background-video-container {
+        position: fixed;
+        top: 0; left: 0;
+        width: 100vw; height: 100vh;
+        z-index: -2;
+        overflow: hidden;
+        pointer-events: none;
+      }
+      #background-video {
+        width: 100vw; height: 100vh;
+        object-fit: cover;
+        filter: blur(16px) brightness(0.72) saturate(1.12);
+        z-index: -2;
+        position: absolute;
+        top: 0; left: 0;
+      }
+      .background-blur-overlay {
+        position: absolute;
+        top: 0; left: 0;
+        width: 100vw; height: 100vh;
+        background: radial-gradient(ellipse at 60% 10%,rgba(241,196,15,0.13) 0%,rgba(24,26,27,0.93) 60%);
+        z-index: -1;
+        pointer-events: none;
+      }
+      @media (max-width: 900px) {
+        .sidebar { min-width: 60px; flex: 0 0 60px; }
+        .table-container { padding: 10px 2vw; }
+      }
+      @media (max-width: 600px) {
+        .app-foreground { flex-direction: column; }
+        .sidebar { flex-direction: row; min-width: 0; width: 100%; }
+        .table-container { padding: 6px 1vw; }
+      }
+    </style>
 </head>
 <body>
     <div class="background-video-container">
@@ -26,7 +126,6 @@
                     <li class="sidebar-btn" id="logoutBtn" tabindex="0" title="Abmelden">Logout</li>
                 </ul>
             </nav>
-            <!-- Clear Data Button unten links -->
             <button class="clear-data-btn" id="clearDataBtn" title="Daten und/oder Archiv löschen">Clear Data</button>
         </aside>
         <!-- Main Content -->
@@ -38,25 +137,25 @@
             </div>
             <div class="archive-upload-bar" id="archiveUploadBar" style="display:none;"></div>
         </main>
-        <!-- Footer -->
-        <footer class="footer-dsgvo">
-            <button class="footer-link" onclick="showPrivacy()" id="privacyLink" aria-label="Datenschutz & Barrierefreiheit anzeigen" title="Datenschutz anzeigen">
-                Privacy
-            </button>
-            <a href="https://github.com/Olivetr33/risker_read-it-" class="footer-link" target="_blank" rel="noopener" aria-label="GitHub Repository" title="GitHub Repository">GitHub</a>
-        </footer>
-        <!-- Popup -->
-        <div id="popupBg" class="popup-bg" style="display:none;">
-            <div class="popup" id="popupContent">
-                <button class="popup-close" onclick="hidePopup()" title="Schließen" aria-label="Popup schließen">×</button>
-                <div id="popupInner"></div>
-            </div>
+    </div>
+    <!-- Footer ist jetzt direktes Kind von <body> -->
+    <footer class="footer-dsgvo">
+        <button class="footer-link" onclick="showPrivacy()" id="privacyLink" aria-label="Datenschutz & Barrierefreiheit anzeigen" title="Datenschutz anzeigen">
+            Privacy
+        </button>
+        <a href="https://github.com/Olivetr33/risker_read-it-" class="footer-link" target="_blank" rel="noopener" aria-label="GitHub Repository" title="GitHub Repository">GitHub</a>
+    </footer>
+    <!-- Popup -->
+    <div id="popupBg" class="popup-bg" style="display:none;">
+        <div class="popup" id="popupContent">
+            <button class="popup-close" onclick="hidePopup()" title="Schließen" aria-label="Popup schließen">×</button>
+            <div id="popupInner"></div>
         </div>
-        <!-- Dialog -->
-        <div id="dialogBg" class="popup-bg" style="display:none;">
-            <div class="popup" id="dialogContent">
-                <div id="dialogInner"></div>
-            </div>
+    </div>
+    <!-- Dialog -->
+    <div id="dialogBg" class="popup-bg" style="display:none;">
+        <div class="popup" id="dialogContent">
+            <div id="dialogInner"></div>
         </div>
     </div>
     <script src="utils.js"></script>
