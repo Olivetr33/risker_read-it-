@@ -1,56 +1,65 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
     <meta charset="UTF-8" />
     <title>NO MORE RISK! App</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="styles.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
-    <div class="container">
-        <!-- Sidebar wird dynamisch geladen -->
-        <div id="sidebar-container"></div>
-
+    <div class="background-video-container">
+        <video autoplay muted loop playsinline id="background-video">
+            <source src="background.mp4" type="video/mp4">
+        </video>
+        <div class="background-blur-overlay"></div>
+    </div>
+    <div class="app-foreground">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar" aria-label="Hauptnavigation">
+            <nav>
+                <ul>
+                    <li class="sidebar-btn" id="startBtn" tabindex="0" title="Zur Startseite">Start</li>
+                    <li class="sidebar-btn" id="uploadDataBtn" tabindex="0" title="Excel-Datei hochladen">Upload Data</li>
+                    <li class="sidebar-btn" id="changeLcsmBtn" tabindex="0" title="LCSM wechseln">Change LCSM</li>
+                    <li class="sidebar-btn" id="archiveBtn" tabindex="0" title="Archiv anzeigen">Archive</li>
+                    <li class="sidebar-btn" id="logoutBtn" tabindex="0" title="Abmelden">Logout</li>
+                </ul>
+            </nav>
+            <!-- Clear Data Button unten links -->
+            <button class="clear-data-btn" id="clearDataBtn" title="Daten und/oder Archiv löschen">Clear Data</button>
+        </aside>
         <!-- Main Content -->
         <main class="main-content" id="mainContent">
-            <div class="top-bar">
-                <button class="upload-btn-main" id="uploadBtnMain" onclick="document.getElementById('fileInput').click()" style="display:none">Upload Data</button>
-                <input type="file" id="fileInput" accept=".xlsx,.xls" style="display:none" />
-            </div>
+            <input type="file" id="fileInput" accept=".xlsx,.xls" style="display:none" />
             <div class="sticky-sort-controls" id="stickySort"></div>
-            <div class="table-container">
+            <div class="table-container" id="tableContainer" style="display:none;">
                 <table class="data-table" id="dataTable"></table>
             </div>
+            <div class="archive-upload-bar" id="archiveUploadBar" style="display:none;"></div>
         </main>
+        <!-- Footer -->
+        <footer class="footer-dsgvo">
+            <button class="footer-link" onclick="showPrivacy()" id="privacyLink" aria-label="Datenschutz & Barrierefreiheit anzeigen" title="Datenschutz anzeigen">
+                Privacy
+            </button>
+            <a href="https://github.com/Olivetr33/risker_read-it-" class="footer-link" target="_blank" rel="noopener" aria-label="GitHub Repository" title="GitHub Repository">GitHub</a>
+        </footer>
+        <!-- Popup -->
+        <div id="popupBg" class="popup-bg" style="display:none;">
+            <div class="popup" id="popupContent">
+                <button class="popup-close" onclick="hidePopup()" title="Schließen" aria-label="Popup schließen">×</button>
+                <div id="popupInner"></div>
+            </div>
+        </div>
+        <!-- Dialog -->
+        <div id="dialogBg" class="popup-bg" style="display:none;">
+            <div class="popup" id="dialogContent">
+                <div id="dialogInner"></div>
+            </div>
+        </div>
     </div>
-
-    <!-- Footer und Popup werden dynamisch geladen -->
-    <div id="footer-container"></div>
-    <div id="popup-container"></div>
-    <div id="dialog-container"></div>
-
-    <!-- Modularisierte JS-Dateien -->
     <script src="utils.js"></script>
-    <script src="sidebar.js"></script>
-    <script src="upload.js"></script>
-    <script src="table.js"></script>
-    <script src="popup.js"></script>
     <script src="app.js"></script>
-
-    <script>
-        // Komponenten dynamisch nachladen
-        fetch('sidebar.html')
-            .then(res => res.text())
-            .then(html => document.getElementById('sidebar-container').innerHTML = html);
-        fetch('footer.html')
-            .then(res => res.text())
-            .then(html => document.getElementById('footer-container').innerHTML = html);
-        fetch('popup.html')
-            .then(res => res.text())
-            .then(html => document.getElementById('popup-container').innerHTML = html);
-        fetch('dialog.html')
-            .then(res => res.text())
-            .then(html => document.getElementById('dialog-container').innerHTML = html);
-    </script>
 </body>
 </html>

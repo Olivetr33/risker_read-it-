@@ -1,63 +1,89 @@
-/* ===========================================================
-   VARIABLES
-   =========================================================== */
 :root {
-    --color-bg: #23272b;
-    --color-bg-gradient: linear-gradient(135deg, #23272b 0%, #23272b 70%, #181a1b 100%);
-    --color-sidebar: rgba(25, 26, 30, 0.97);
-    --color-card: rgba(35, 39, 43, 0.97);
+    --color-bg: #181a1b;
+    --color-sidebar: #191a1e;
+    --color-card: #23272b;
     --color-accent: #f1c40f;
     --color-accent-dark: #393a40;
-    --color-accent-light: #fffbe6;
     --color-text: #f1f1f1;
     --color-text-muted: #b3b3b3;
-    --color-border: #23272b;
-    --color-shadow: 0 2px 16px rgba(0,0,0,0.13);
     --color-footer: #111;
     --badge-contact: #4a90e2;
     --badge-update: #f39c12;
     --badge-value: #16a085;
     --badge-contract: #8e44ad;
     --badge-objective: #e67e22;
-    --radius: 18px;
+    --radius: 22px;
     --sidebar-width: 220px;
+    --footer-height: 56px;
+    --shadow: 0 8px 32px rgba(0,0,0,0.25);
     --transition: 0.13s;
 }
 
-/* ===========================================================
-   LAYOUT
-   =========================================================== */
+/* Flexbox-Layout für Sticky Footer */
 html, body {
+    height: 100%;
+    min-height: 100vh;
     margin: 0;
     padding: 0;
-    min-height: 100vh;
-    background: var(--color-bg-gradient);
-    font-family: 'Segoe UI', Arial, sans-serif;
-    color: var(--color-text);
+    box-sizing: border-box;
 }
 body {
-    background-attachment: fixed;
-}
-.container {
     display: flex;
+    flex-direction: column;
     min-height: 100vh;
+    background: var(--color-bg);
+}
+.background-video-container {
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    overflow: hidden;
+    z-index: 0;
+}
+#background-video {
+    width: 100vw; height: 100vh;
+    object-fit: cover;
+    filter: blur(14px) brightness(0.7) saturate(1.2);
+    transform: scale(1.04);
+}
+.background-blur-overlay {
+    position: absolute;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(24,26,27,0.55);
+    pointer-events: none;
 }
 
-/* ===========================================================
-   SIDEBAR
-   =========================================================== */
+/* App-Vordergrund als Flex-Container */
+.app-foreground {
+    flex: 1 0 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    position: relative;
+    z-index: 1;
+}
+
+/* Sidebar */
 .sidebar {
     width: var(--sidebar-width);
     background: var(--color-sidebar);
-    backdrop-filter: blur(10px);
-    border-right: 1px solid var(--color-border);
-    display: flex;
-    flex-direction: column;
-    padding: 0;
+    height: calc(100vh - var(--footer-height));
     position: fixed;
     top: 0; left: 0;
-    height: 100vh;
-    z-index: 1100;
+    z-index: 10;
+    padding-top: 32px;
+    border-radius: 0 32px 32px 0;
+    box-shadow: 4px 0 24px rgba(0,0,0,0.15);
+    backdrop-filter: blur(10px);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: stretch;
+    box-sizing: border-box;
+}
+
+/* Sidebar-Inhalt bleibt wie gehabt */
+.sidebar nav {
+    flex: 0 0 auto;
 }
 .sidebar nav ul {
     list-style: none;
@@ -65,180 +91,228 @@ body {
     margin: 0;
 }
 .sidebar-btn {
-    padding: 14px 32px;
-    color: var(--color-text-muted);
-    font-size: 1.08rem;
-    display: flex;
-    align-items: center;
-    gap: 14px;
+    padding: 18px 36px;
+    color: var(--color-text);
+    font-size: 1.12rem;
     border-left: 3px solid transparent;
+    border-radius: 0 18px 18px 0;
+    margin-bottom: 8px;
+    background: rgba(255,255,255,0.04);
+    transition: background 0.15s, color 0.15s, border 0.15s, transform 0.08s;
     cursor: pointer;
-    transition: background var(--transition), color var(--transition);
-    border-radius: 0 20px 20px 0;
-    margin-bottom: 4px;
+    font-weight: 500;
+    outline: none;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.07);
+    position: relative;
+    text-align: left;
+    letter-spacing: 0.01em;
 }
-.sidebar-btn:hover, .sidebar-btn.active {
-    background: rgba(60,60,70,0.18);
+/* ... (Sidebar-Button Hover/Active/Tooltip bleibt wie gehabt) ... */
+
+/* Tooltips für Sidebar */
+.sidebar-btn[title] {
+    position: relative;
+}
+.sidebar-btn[title]:hover::after,
+.sidebar-btn[title]:focus::after {
+    content: attr(title);
+    position: absolute;
+    left: 110%;
+    top: 50%;
+    transform: translateY(-50%);
+    background: #23272b;
     color: #fff;
-    border-left: 3px solid var(--color-accent);
+    padding: 7px 16px;
+    border-radius: 8px;
+    white-space: nowrap;
+    font-size: 0.97rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.14);
+    z-index: 100;
+    opacity: 1;
+    pointer-events: none;
 }
 
-/* ===========================================================
-   MAIN CONTENT
-   =========================================================== */
+/* Clear Data Button: immer unten in der Sidebar, nie vom Footer verdeckt */
+.clear-data-btn {
+    background: rgba(255,255,255,0.09);
+    color: #eee;
+    border: none;
+    border-radius: 10px;
+    font-size: 0.97rem;
+    padding: 8px 22px;
+    cursor: pointer;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.09);
+    transition: background 0.15s, color 0.15s, transform 0.08s;
+    width: calc(100% - 36px);
+    text-align: center;
+    opacity: 0.85;
+    margin: 0 18px 18px 18px;
+    margin-top: auto;
+    position: relative;
+    bottom: 0;
+    z-index: 2;
+    /* immer sichtbar, unabhängig von Footer */
+}
+.clear-data-btn:hover,
+.clear-data-btn:focus {
+    background: rgba(241,196,15,0.18);
+    color: var(--color-accent);
+}
+.clear-data-btn:active {
+    background: rgba(60,60,70,0.22);
+    color: var(--color-accent);
+    transform: scale(0.97);
+}
+
+/* Main Content */
 .main-content {
+    flex: 1 0 auto;
     margin-left: var(--sidebar-width);
     padding: 48px 40px 0 40px;
-    min-height: 100vh;
-    background: transparent;
+    min-height: 0;
     width: 100%;
-}
-.top-bar {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    margin-bottom: 24px;
+    background: transparent;
 }
 
-/* ===========================================================
-   BUTTONS
-   =========================================================== */
-.upload-btn-main {
+/* Archiv-Upload-Button wie Start-Upload-Button */
+.archive-upload-bar {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 30px 0 0 0;
+}
+.archive-upload-bar .upload-btn-main {
     background: var(--color-accent-dark);
     color: var(--color-accent);
     border: none;
-    border-radius: 12px;
-    font-size: 1.12rem;
+    border-radius: 16px;
+    font-size: 1.18rem;
     font-weight: 600;
-    padding: 14px 36px;
+    padding: 16px 44px;
     cursor: pointer;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.12);
-    transition: background 0.15s, color 0.15s;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.14);
+    transition: background 0.18s, color 0.18s, transform 0.09s;
     margin: 0 auto;
     display: block;
 }
-.upload-btn-main.show {
-    display: block !important;
-    animation: fadeIn 1s;
-}
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
-.complete-btn {
-    background: #23272b;
-    color: var(--color-accent);
-    border: 2px solid var(--color-accent);
-    border-radius: 8px;
-    padding: 8px 22px;
-    font-size: 1.08rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background var(--transition), color var(--transition);
-    margin-left: 8px;
-}
-.complete-btn:hover {
+.archive-upload-bar .upload-btn-main:active {
     background: var(--color-accent);
-    color: #23272b;
-}
-.copy-btn {
-    background: none;
-    color: var(--color-accent);
-    border: none;
-    border-radius: 7px;
-    padding: 6px 10px;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: background var(--transition), color var(--transition);
-}
-.copy-btn:hover {
-    background: #23272b;
-    color: #fff;
+    color: var(--color-accent-dark);
+    transform: scale(0.96);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.11);
 }
 
-/* ===========================================================
-   SORT CONTROLS
-   =========================================================== */
+/* Sortierleiste modern & abgesetzt */
 .sticky-sort-controls {
-    position: sticky;
-    top: 0;
-    background: rgba(35,39,43,0.97);
-    z-index: 10;
-    border-radius: 0 0 20px 20px;
-    padding: 12px 0;
-    margin-bottom: 12px;
+    width: 100%;
     display: flex;
     justify-content: center;
-}
-.sort-controls {
-    display: flex;
     align-items: center;
-    gap: 8px;
-}
-.sort-select {
-    background: #23272b;
-    color: var(--color-accent);
-    border: none;
-    border-radius: 8px;
-    padding: 8px 18px;
-    font-size: 1.1rem;
-    appearance: none;
-    -webkit-appearance: none;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.12);
-    transition: border 0.13s, box-shadow 0.13s;
-}
-.sort-select:focus {
-    outline: none;
-    border: 2px solid var(--color-accent);
-    box-shadow: 0 0 0 2px #f1c40f33;
-}
-.sort-btn {
-    background: #23272b;
-    color: var(--color-accent);
-    border: 2px solid var(--color-accent);
-    border-radius: 8px;
-    padding: 8px 16px;
-    font-size: 1.18rem;
-    font-weight: 600;
-    cursor: pointer;
-    margin-left: 6px;
-    transition: background 0.13s, color 0.13s;
-}
-.sort-btn.active, .sort-btn:focus {
-    background: var(--color-accent);
-    color: #23272b;
-    outline: 2px solid var(--color-accent);
+    margin-bottom: 18px;
 }
 
-/* ===========================================================
-   TABLE
-   =========================================================== */
+.sort-controls {
+    background: rgba(35, 39, 43, 0.93);
+    border-radius: 16px;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.13);
+    padding: 16px 28px;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+}
+
+.sort-controls label {
+    color: var(--color-text);
+    font-size: 1.13rem;
+    font-weight: 500;
+    margin-right: 4px;
+    letter-spacing: 0.01em;
+}
+
+.sort-select {
+    background: rgba(24,26,27,0.98);
+    color: var(--color-text);
+    border: none;
+    border-radius: 8px;
+    font-size: 1.08rem;
+    padding: 7px 18px;
+    margin-right: 8px;
+    outline: none;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+    transition: box-shadow 0.13s;
+}
+
+.sort-select:focus {
+    box-shadow: 0 0 0 2px var(--color-accent);
+}
+
+.sort-btn {
+    background: rgba(60,60,70,0.22);
+    color: var(--color-accent);
+    border: none;
+    border-radius: 50%;
+    font-size: 1.15rem;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 2px;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    transition: background 0.15s, color 0.13s, transform 0.09s;
+    outline: none;
+}
+.sort-btn.active, .sort-btn:active {
+    background: var(--color-accent);
+    color: var(--color-accent-dark);
+    transform: scale(0.95);
+}
+
+.sort-btn:hover {
+    background: var(--color-accent-dark);
+    color: var(--color-accent);
+}
+
+/* Tabelle mit Apple-Style: abgerundet, Schatten, starker Kontrast */
 .table-container {
     width: 100%;
     display: flex;
     justify-content: center;
+    flex: 1 1 auto;
+    max-height: calc(100vh - var(--footer-height) - 180px);
+    overflow-y: auto;
+    padding-bottom: 16px;
 }
 .data-table {
-    width: 100%;
-    max-width: 1100px;
+    margin-left: auto;
+    margin-right: auto;
+    width: 96%;
+    max-width: 1200px;
     border-collapse: separate;
     border-spacing: 0;
     background: var(--color-card);
-    border-radius: var(--radius);
-    box-shadow: var(--color-shadow);
+    border-radius: 28px;
+    box-shadow: var(--shadow);
     overflow: hidden;
+    color: var(--color-text);
 }
 .data-table th, .data-table td {
-    padding: 18px 16px;
+    padding: 22px 18px;
     text-align: left;
-    font-size: 1.08rem;
-    border-bottom: 1px solid #2c2f35;
+    font-size: 1.12rem;
+    border-bottom: 1.5px solid #24272b;
     vertical-align: middle;
 }
 .data-table th {
-    color: var(--color-text-muted);
-    font-weight: 600;
-    background: rgba(35,39,43,0.99);
+    color: #fff;
+    font-weight: 700;
+    background: rgba(30,32,36,0.95);
+    letter-spacing: 0.03em;
 }
 .data-table tr:last-child td {
     border-bottom: none;
@@ -247,64 +321,56 @@ body {
     background: rgba(60,60,70,0.13);
 }
 
-/* ===========================================================
-   BADGES
-   =========================================================== */
-.badge {
-    display: inline-block;
-    padding: 4px 12px;
-    border-radius: 16px;
-    font-size: 0.98rem;
-    font-weight: 600;
-    margin-left: 7px;
-    margin-right: 0;
-    vertical-align: middle;
-    background: var(--color-accent-dark);
-    color: #fff;
-    letter-spacing: 0.02em;
-}
-.badge-contact { background: var(--badge-contact); color: #fff; }
-.badge-update { background: var(--badge-update); color: #fff; }
-.badge-value { background: var(--badge-value); color: #fff; }
-.badge-contract { background: var(--badge-contract); color: #fff; }
-.badge-objective { background: var(--badge-objective); color: #fff; }
-
-/* ===========================================================
-   FOOTER
-   =========================================================== */
+/* Sticky Footer mit Flexbox */
 .footer-dsgvo {
+    flex-shrink: 0;
     width: 100vw;
     background: var(--color-footer);
     color: #eee;
     text-align: center;
     padding: 10px 0 8px 0;
-    position: fixed;
-    left: 0; bottom: 0;
-    z-index: 100;
     font-size: 0.95rem;
     letter-spacing: 0.02em;
     opacity: 0.85;
     font-family: 'Segoe UI', Arial, sans-serif;
-}
-.footer-link {
-    color: var(--color-accent);
-    text-decoration: underline;
-    font-size: 1rem;
-    margin: 0 10px;
-    cursor: pointer;
-    background: none;
-    border: none;
-    padding: 0;
-    font-family: inherit;
-    transition: color 0.13s;
-}
-.footer-link:hover {
-    color: #fff;
+    z-index: 100;
+    border-radius: 22px 22px 0 0;
+    box-shadow: 0 -4px 24px rgba(0,0,0,0.15);
+    position: relative;
+    margin-top: auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
 }
 
-/* ===========================================================
-   POPUPS & OVERLAYS
-   =========================================================== */
+/* Footer-Links (Privacy, GitHub) */
+.footer-link {
+    background: rgba(255,255,255,0.04);
+    color: var(--color-text);
+    border: none;
+    border-radius: 12px;
+    font-size: 1.07rem;
+    font-weight: 500;
+    padding: 10px 36px;
+    cursor: pointer;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.07);
+    transition: background 0.15s, color 0.15s, transform 0.08s;
+    margin: 0 4px;
+    display: inline-block;
+    text-decoration: none;
+}
+.footer-link:hover, .footer-link:focus {
+    background: rgba(241,196,15,0.13);
+    color: var(--color-accent);
+}
+.footer-link:active {
+    background: rgba(60,60,70,0.22);
+    color: var(--color-accent);
+    transform: scale(0.97);
+}
+
+/* Popups/Dialog zentriert und dunkel */
 .popup-bg {
     position: fixed;
     top:0; left:0; width:100vw; height:100vh;
@@ -317,7 +383,7 @@ body {
 .popup {
     background: var(--color-card);
     color: #fff;
-    border-radius: 12px;
+    border-radius: 18px;
     padding: 32px 28px;
     min-width: 320px;
     max-width: 90vw;
@@ -335,7 +401,96 @@ body {
     cursor: pointer;
 }
 
-/* ===========================================================
-   SCROLLBAR
-   =========================================================== */
+/* Badges */
+.badge {
+    display: inline-block;
+    padding: 6px 16px;
+    border-radius: 18px;
+    font-size: 1.05rem;
+    font-weight: 600;
+    margin-left: 7px;
+    margin-right: 0;
+    vertical-align: middle;
+    background: var(--color-accent-dark);
+    color: #fff;
+    letter-spacing: 0.02em;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+}
+.badge-contact { background: var(--badge-contact); }
+.badge-update { background: var(--badge-update); }
+.badge-value { background: var(--badge-value); }
+.badge-contract { background: var(--badge-contract); }
+.badge-objective { background: var(--badge-objective); }
+
+/* Buttons */
+.complete-btn, .copy-btn {
+    background: var(--color-accent-dark);
+    color: var(--color-accent);
+    border: none;
+    border-radius: 12px;
+    font-size: 1.08rem;
+    font-weight: 600;
+    padding: 10px 24px;
+    cursor: pointer;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+    transition: background 0.15s, color 0.15s, transform 0.09s;
+    margin: 0 8px;
+    display: inline-block;
+}
+.complete-btn:active, .copy-btn:active {
+    background: var(--color-accent);
+    color: var(--color-accent-dark);
+    transform: scale(0.97);
+}
+
+/* Responsive Design */
+@media (max-width: 900px) {
+    .sidebar {
+        width: 60px;
+        padding-top: 16px;
+        border-radius: 0 18px 18px 0;
+        height: calc(100vh - var(--footer-height));
+    }
+    .sidebar-btn {
+        font-size: 0.98rem;
+        padding: 14px 10px;
+        border-radius: 0 12px 12px 0;
+        text-align: center;
+    }
+    .main-content {
+        margin-left: 60px;
+        padding: 24px 8px 0 8px;
+    }
+    .data-table {
+        font-size: 0.98rem;
+        width: 99%;
+        max-width: 99vw;
+    }
+    .clear-data-btn {
+        width: calc(100% - 16px);
+        margin-left: 8px;
+        margin-right: 8px;
+        font-size: 0.93rem;
+    }
+}
+@media (max-width: 600px) {
+    .sidebar {
+        display: none;
+    }
+    .main-content {
+        margin-left: 0;
+        padding: 12px 2vw 0 2vw;
+    }
+    .data-table th, .data-table td {
+        padding: 10px 6px;
+        font-size: 0.93rem;
+    }
+    .footer-dsgvo {
+        font-size: 0.85rem;
+        border-radius: 12px 12px 0 0;
+        padding: 7px 0 6px 0;
+    }
+}
+
+/* Scrollbar */
 ::-webkit-scrollbar { width: 0; background: transparent; }

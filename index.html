@@ -1,14 +1,149 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
     <meta charset="UTF-8" />
     <title>NO MORE RISK! Start</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="styles.css" />
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            background: #181a1b;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            overflow: hidden;
+        }
+        .startup-screen {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            z-index: 2000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+        .startup-video {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            object-fit: cover;
+            z-index: 1;
+        }
+        .startup-overlay {
+            position: relative;
+            z-index: 2;
+            width: 100vw;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            height: 100vh;
+            pointer-events: none;
+        }
+        .startup-btn {
+            background: rgba(241,196,15,0.92);
+            color: #222;
+            font-size: 1.25rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 16px;
+            padding: 16px 44px;
+            cursor: pointer;
+            box-shadow: 0 2px 22px rgba(0,0,0,0.18);
+            transition: background 0.2s, color 0.2s, opacity 0.5s, transform 0.6s cubic-bezier(.44,1.6,.61,.86);
+            opacity: 0;
+            pointer-events: auto;
+            margin-bottom: 64px;
+            animation: floatUpDown 2.2s ease-in-out infinite alternate;
+        }
+        .startup-btn.show {
+            opacity: 1;
+            animation: fadeIn 1s, floatUpDown 2.2s ease-in-out infinite alternate;
+        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes floatUpDown {
+            0%   { transform: translateY(0); }
+            100% { transform: translateY(-18px); }
+        }
+        .privacy-start {
+            position: fixed;
+            left: 50%;
+            bottom: 24px;
+            transform: translateX(-50%);
+            background: none;
+            color: #fff;
+            font-size: 1rem;
+            border: none;
+            opacity: 0.85;
+            z-index: 3000;
+            cursor: pointer;
+            padding: 6px 18px;
+            border-radius: 12px;
+            letter-spacing: 0.01em;
+            transition: background 0.18s, color 0.18s;
+        }
+        .privacy-start:hover, .privacy-start:focus {
+            background: rgba(255,255,255,0.10);
+            color: #f1c40f;
+        }
+        /* Popup-Styles wie App */
+        .popup-bg {
+            position: fixed;
+            top:0; left:0; width:100vw; height:100vh;
+            background: rgba(0,0,0,0.5);
+            z-index: 3000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .popup {
+            background: #23272b;
+            color: #fff;
+            border-radius: 18px;
+            padding: 32px 28px;
+            min-width: 320px;
+            max-width: 90vw;
+            box-shadow: 0 4px 32px rgba(0,0,0,0.25);
+            text-align: left;
+            position: relative;
+        }
+        .popup-close {
+            position: absolute;
+            top: 12px; right: 16px;
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+        .privacy-popup-content h3 {
+            margin-top: 0;
+            color: #f1c40f;
+            font-size: 1.35rem;
+            margin-bottom: 16px;
+        }
+        .privacy-popup-content p {
+            font-size: 1.08rem;
+            line-height: 1.6;
+            color: #f1f1f1;
+            margin-bottom: 12px;
+        }
+        .privacy-popup-content b {
+            color: #f1c40f;
+        }
+        .privacy-popup-content a {
+            color: #f1c40f;
+            text-decoration: underline;
+        }
+    </style>
 </head>
 <body>
     <div class="startup-screen" id="startupScreen">
         <video autoplay muted loop class="startup-video">
-            <source src="background.mp4" type="video/mp4" />
+            <source src="background.mp4" type="video/mp4">
+            Your browser does not support the video tag.
         </video>
         <div class="startup-overlay">
             <button class="startup-btn" id="startBtn" onclick="window.location='app.html'">
@@ -16,43 +151,16 @@
             </button>
         </div>
     </div>
-
-    <!-- Modularer Footer und Popup -->
-    <div id="footer-container"></div>
-    <div id="popup-container"></div>
-
-    <script src="utils.js"></script>
+    <!-- Privacy Button (immer sichtbar) -->
+    <button class="privacy-start" onclick="showPrivacy()" id="privacyBtnStart" aria-label="Datenschutz anzeigen">Privacy</button>
+    <!-- Popup für Privacy -->
+    <div id="popupBg" class="popup-bg" style="display:none;">
+        <div class="popup" id="popupContent">
+            <button class="popup-close" onclick="hidePopup()" title="Schließen" aria-label="Popup schließen">×</button>
+            <div id="popupInner"></div>
+        </div>
+    </div>
     <script>
-        // Dynamisch Footer und Popup laden
-        fetch('footer.html')
-            .then(res => res.text())
-            .then(html => document.getElementById('footer-container').innerHTML = html);
-        fetch('popup.html')
-            .then(res => res.text())
-            .then(html => document.getElementById('popup-container').innerHTML = html);
-
-        // DSGVO Popup-Handler
-        document.addEventListener('DOMContentLoaded', function() {
-            const privacyText = `
-                <h3>Privacy Policy & Accessibility Notice (BfSG)</h3>
-                <p>This tool is a purely local application. No data is transmitted to third parties or external servers. All files and session data remain on your device and can be deleted at any time in your local start directory.</p>
-                <p><b>GDPR compliance:</b> The application is designed to be fully GDPR-compliant. No personal data is processed outside your device. No cookies or trackers are used.</p>
-                <p><b>Accessibility (BfSG):</b> According to the German Accessibility Strengthening Act (Barrierefreiheitsstärkungsgesetz, BfSG), we strive to make this tool as accessible as possible. If you encounter any barriers or accessibility issues, please contact us at <a href="mailto:saberton24@outlook.de" style="color:#f1c40f;">saberton24@outlook.de</a>. As this is a local, non-commercial tool, some requirements of the BfSG may not apply.</p>
-            `;
-            document.body.addEventListener('click', function(e) {
-                if (e.target && e.target.id === 'privacyLink') {
-                    document.getElementById('popupInner').innerHTML = privacyText;
-                    document.getElementById('popupBg').style.display = 'flex';
-                }
-                if (e.target && e.target.id === 'popupClose') {
-                    document.getElementById('popupBg').style.display = 'none';
-                }
-                if (e.target && e.target.id === 'popupBg') {
-                    document.getElementById('popupBg').style.display = 'none';
-                }
-            });
-        });
-
         // Startbutton verzögert anzeigen
         const btn = document.getElementById('startBtn');
         let shown = false;
@@ -62,8 +170,37 @@
                 shown = true;
             }
         }
-        setTimeout(showBtn, 2000);
+        setTimeout(showBtn, 1200);
         document.addEventListener('click', showBtn, { once: true });
+
+        // Privacy-Logik wie in app.js
+        const privacyText = `
+        <div class="privacy-popup-content">
+            <h3>Datenschutz</h3>
+            <p>
+                Diese Anwendung ist eine rein lokale Web-App. Es werden <b>keine Daten</b> an Dritte oder externe Server übertragen.<br>
+                Alle Dateien und Sitzungsdaten verbleiben auf deinem Gerät und können jederzeit lokal gelöscht werden.
+            </p>
+            <p>
+                <b>DSGVO-Konformität:</b> Die Anwendung ist so konzipiert, dass sie vollständig DSGVO-konform ist.<br>
+                Es werden keine personenbezogenen Daten außerhalb deines Geräts verarbeitet. Es werden keine Cookies oder Tracker eingesetzt.
+            </p>
+            <p style="color:#b3b3b3;font-size:0.98rem;">
+                Kontakt für Datenschutz-Anfragen: <a href="mailto:saberton24@outlook.de">saberton24@outlook.de</a>
+            </p>
+        </div>
+        `;
+        function showPrivacy() {
+            document.getElementById('popupInner').innerHTML = privacyText;
+            document.getElementById('popupBg').style.display = 'flex';
+        }
+        function hidePopup() {
+            document.getElementById('popupBg').style.display = 'none';
+        }
+        // Popup schließen per Klick auf Overlay
+        document.getElementById('popupBg').addEventListener('click', function(e){
+            if(e.target === this) hidePopup();
+        });
     </script>
 </body>
 </html>

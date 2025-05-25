@@ -1,39 +1,50 @@
-// Utility functions for DOM and common tasks
-
-/**
- * Hole ein Element per ID
- * @param {string} id
- * @returns {HTMLElement|null}
- */
-function $(id) {
-    return document.getElementById(id);
+// Utility: Einfaches Event-Binding per ID
+function on(id, event, fn) {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener(event, fn);
 }
 
-/**
- * Zeige ein Element (display: block)
- * @param {HTMLElement|string} el
- */
-function show(el) {
-    if (typeof el === "string") el = $(el);
-    if (el) el.style.display = 'block';
+// Utility: Shortcut für DOM-Selektor
+function $(selector, scope = document) {
+    return scope.querySelector(selector);
 }
 
-/**
- * Verstecke ein Element (display: none)
- * @param {HTMLElement|string} el
- */
-function hide(el) {
-    if (typeof el === "string") el = $(el);
-    if (el) el.style.display = 'none';
+// Utility: Mehrere DOM-Elemente selektieren
+function $all(selector, scope = document) {
+    return Array.from(scope.querySelectorAll(selector));
 }
 
-/**
- * Füge einen Event-Listener zu einem Element hinzu
- * @param {string} id
- * @param {string} event
- * @param {function} handler
- */
-function on(id, event, handler) {
-    const el = $(id);
-    if (el) el.addEventListener(event, handler);
+// Utility: String mit erstem Buchstaben groß
+function capitalize(str) {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+// Utility: Array chunking
+function chunkArray(array, chunkSize) {
+    const chunks = [];
+    for (let i = 0; i < array.length; i += chunkSize) {
+        chunks.push(array.slice(i, i + chunkSize));
+    }
+    return chunks;
+}
+
+// Utility: Debounce (z.B. für Suchfelder)
+function debounce(fn, delay = 300) {
+    let timeout;
+    return (...args) => {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => fn(...args), delay);
+    };
+}
+
+// Utility: Throttle (z.B. für Scroll-Events)
+function throttle(fn, limit = 300) {
+    let inThrottle;
+    return (...args) => {
+        if (!inThrottle) {
+            fn(...args);
+            inThrottle = true;
+            setTimeout(() => inThrottle = false, limit);
+        }
+    };
 }
