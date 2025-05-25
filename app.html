@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>NO MORE RISK! App</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar wird dynamisch geladen -->
+        <div id="sidebar-container"></div>
+
+        <!-- Main Content -->
+        <main class="main-content" id="mainContent">
+            <div class="top-bar">
+                <button class="upload-btn-main" id="uploadBtnMain" onclick="document.getElementById('fileInput').click()" style="display:none">Upload Data</button>
+                <input type="file" id="fileInput" accept=".xlsx,.xls" style="display:none" />
+            </div>
+            <div class="sticky-sort-controls" id="stickySort"></div>
+            <div class="table-container">
+                <table class="data-table" id="dataTable"></table>
+            </div>
+        </main>
+    </div>
+
+    <!-- Footer und Popup werden dynamisch geladen -->
+    <div id="footer-container"></div>
+    <div id="popup-container"></div>
+    <div id="dialog-container"></div>
+
+    <!-- Modularisierte JS-Dateien -->
+    <script src="utils.js"></script>
+    <script src="sidebar.js"></script>
+    <script src="upload.js"></script>
+    <script src="table.js"></script>
+    <script src="popup.js"></script>
+    <script src="app.js"></script>
+
+    <script>
+        // Komponenten dynamisch nachladen
+        fetch('sidebar.html')
+            .then(res => res.text())
+            .then(html => document.getElementById('sidebar-container').innerHTML = html);
+        fetch('footer.html')
+            .then(res => res.text())
+            .then(html => document.getElementById('footer-container').innerHTML = html);
+        fetch('popup.html')
+            .then(res => res.text())
+            .then(html => document.getElementById('popup-container').innerHTML = html);
+        fetch('dialog.html')
+            .then(res => res.text())
+            .then(html => document.getElementById('dialog-container').innerHTML = html);
+    </script>
+</body>
+</html>

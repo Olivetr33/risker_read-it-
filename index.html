@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>NO MORE RISK! Start</title>
+    <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+    <div class="startup-screen" id="startupScreen">
+        <video autoplay muted loop class="startup-video">
+            <source src="background.mp4" type="video/mp4" />
+        </video>
+        <div class="startup-overlay">
+            <button class="startup-btn" id="startBtn" onclick="window.location='app.html'">
+                NO MORE RISK!
+            </button>
+        </div>
+    </div>
+
+    <!-- Modularer Footer und Popup -->
+    <div id="footer-container"></div>
+    <div id="popup-container"></div>
+
+    <script src="utils.js"></script>
+    <script>
+        // Dynamisch Footer und Popup laden
+        fetch('footer.html')
+            .then(res => res.text())
+            .then(html => document.getElementById('footer-container').innerHTML = html);
+        fetch('popup.html')
+            .then(res => res.text())
+            .then(html => document.getElementById('popup-container').innerHTML = html);
+
+        // DSGVO Popup-Handler
+        document.addEventListener('DOMContentLoaded', function() {
+            const privacyText = `
+                <h3>Privacy Policy & Accessibility Notice (BfSG)</h3>
+                <p>This tool is a purely local application. No data is transmitted to third parties or external servers. All files and session data remain on your device and can be deleted at any time in your local start directory.</p>
+                <p><b>GDPR compliance:</b> The application is designed to be fully GDPR-compliant. No personal data is processed outside your device. No cookies or trackers are used.</p>
+                <p><b>Accessibility (BfSG):</b> According to the German Accessibility Strengthening Act (Barrierefreiheitsstärkungsgesetz, BfSG), we strive to make this tool as accessible as possible. If you encounter any barriers or accessibility issues, please contact us at <a href="mailto:saberton24@outlook.de" style="color:#f1c40f;">saberton24@outlook.de</a>. As this is a local, non-commercial tool, some requirements of the BfSG may not apply.</p>
+            `;
+            document.body.addEventListener('click', function(e) {
+                if (e.target && e.target.id === 'privacyLink') {
+                    document.getElementById('popupInner').innerHTML = privacyText;
+                    document.getElementById('popupBg').style.display = 'flex';
+                }
+                if (e.target && e.target.id === 'popupClose') {
+                    document.getElementById('popupBg').style.display = 'none';
+                }
+                if (e.target && e.target.id === 'popupBg') {
+                    document.getElementById('popupBg').style.display = 'none';
+                }
+            });
+        });
+
+        // Startbutton verzögert anzeigen
+        const btn = document.getElementById('startBtn');
+        let shown = false;
+        function showBtn() {
+            if (!shown) {
+                btn.classList.add('show');
+                shown = true;
+            }
+        }
+        setTimeout(showBtn, 2000);
+        document.addEventListener('click', showBtn, { once: true });
+    </script>
+</body>
+</html>
