@@ -1,164 +1,102 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <title>NO MORE RISK! App</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="styles.css" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <style>
-      html, body {
-        height: 100%;
-        margin: 0;
-        padding: 0;
-        min-height: 100vh;
-      }
-      body {
-        min-height: 100vh;
-        display: flex;
-        flex-direction: column;
-      }
-      .app-foreground {
-        flex: 1 0 auto;
-        display: flex;
-        flex-direction: row;
-        min-height: 0;
-        min-width: 0;
-        position: relative;
-        z-index: 1;
-      }
-      .sidebar {
-        flex: 0 0 220px;
-        min-width: 180px;
-        background: #23272b;
-        z-index: 2;
-        display: flex;
-        flex-direction: column;
-        justify-content: flex-start;
-        padding-bottom: 70px; /* Platz für Footer */
-      }
-      .clear-data-btn {
-        margin-top: auto;
-        margin-bottom: 16px;
-        width: 90%;
-        align-self: center;
-        position: static;
-      }
-      .main-content {
-        flex: 1 1 0;
-        display: flex;
-        flex-direction: column;
-        min-width: 0;
-        min-height: 0;
-        padding: 0;
-      }
-      .table-container {
-        flex: 1 1 auto;
-        min-height: 0;
-        overflow: auto;
-        padding: 24px 16px;
-      }
-      .footer-dsgvo {
-        flex-shrink: 0;
-        background: #23272b;
-        color: #ffd221;
-        text-align: center;
-        font-size: 1.13rem;
-        padding: 26px 0 26px 0;
-        border-top: 2px solid #393a40;
-        letter-spacing: 0.04em;
-        width: 100%;
-        box-shadow: 0 -2px 12px rgba(0,0,0,0.08);
-        position: relative;
-        z-index: 2;
-      }
-      .background-video-container {
-        position: fixed;
-        top: 0; left: 0;
-        width: 100vw; height: 100vh;
-        z-index: -2;
-        overflow: hidden;
-        pointer-events: none;
-      }
-      #background-video {
-        width: 100vw; height: 100vh;
-        object-fit: cover;
-        filter: blur(16px) brightness(0.72) saturate(1.12);
-        z-index: -2;
-        position: absolute;
-        top: 0; left: 0;
-      }
-      .background-blur-overlay {
-        position: absolute;
-        top: 0; left: 0;
-        width: 100vw; height: 100vh;
-        background: radial-gradient(ellipse at 60% 10%,rgba(241,196,15,0.13) 0%,rgba(24,26,27,0.93) 60%);
-        z-index: -1;
-        pointer-events: none;
-      }
-      @media (max-width: 900px) {
-        .sidebar { min-width: 60px; flex: 0 0 60px; }
-        .table-container { padding: 10px 2vw; }
-      }
-      @media (max-width: 600px) {
-        .app-foreground { flex-direction: column; }
-        .sidebar { flex-direction: row; min-width: 0; width: 100%; }
-        .table-container { padding: 6px 1vw; }
-      }
-    </style>
+  <meta charset="UTF-8" />
+  <title>NO MORE RISK! App</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
-    <div class="background-video-container">
-        <video autoplay muted loop playsinline id="background-video">
-            <source src="background.mp4" type="video/mp4">
-        </video>
-        <div class="background-blur-overlay"></div>
+  <!-- Blurred Background -->
+  <div class="background-video-container">
+    <video autoplay muted loop playsinline id="background-video">
+      <source src="background.mp4" type="video/mp4">
+      Your browser does not support the video tag.
+    </video>
+    <div class="background-blur-overlay"></div>
+  </div>
+
+  <div class="app-foreground">
+    <div class="app-wrapper">
+      <!-- Sidebar -->
+      <aside class="sidebar" id="sidebar" aria-label="Main Navigation">
+        <nav>
+          <ul>
+            <li class="sidebar-btn" id="startBtn" tabindex="0" title="Go to Start">Start</li>
+            <li class="sidebar-btn" id="uploadDataBtn" tabindex="0" title="Upload Excel File">Upload Data</li>
+            <li class="sidebar-btn" id="changeLcsmBtn" tabindex="0" title="Change LCSM">Change LCSM</li>
+            <li class="sidebar-btn" id="archiveBtn" tabindex="0" title="Show Archive">Archive</li>
+            <li class="sidebar-btn" id="logoutBtn" tabindex="0" title="Logout">Logout</li>
+          </ul>
+        </nav>
+        <button class="clear-data-btn" id="clearDataBtn" title="Delete data and/or archive">Clear Data</button>
+      </aside>
+      <!-- Main Content -->
+      <main class="main-content" id="mainContent">
+        <input type="file" id="fileInput" accept=".xlsx,.xls" style="display:none" />
+        <div class="sticky-sort-controls" id="stickySort"></div>
+        <div class="table-container" id="tableContainer" style="display:none;">
+          <table class="data-table" id="dataTable"></table>
+        </div>
+        <div class="archive-upload-bar" id="archiveUploadBar" style="display:none;"></div>
+      </main>
     </div>
-    <div class="app-foreground">
-        <!-- Sidebar -->
-        <aside class="sidebar" id="sidebar" aria-label="Hauptnavigation">
-            <nav>
-                <ul>
-                    <li class="sidebar-btn" id="startBtn" tabindex="0" title="Zur Startseite">Start</li>
-                    <li class="sidebar-btn" id="uploadDataBtn" tabindex="0" title="Excel-Datei hochladen">Upload Data</li>
-                    <li class="sidebar-btn" id="changeLcsmBtn" tabindex="0" title="LCSM wechseln">Change LCSM</li>
-                    <li class="sidebar-btn" id="archiveBtn" tabindex="0" title="Archiv anzeigen">Archive</li>
-                    <li class="sidebar-btn" id="logoutBtn" tabindex="0" title="Abmelden">Logout</li>
-                </ul>
-            </nav>
-            <button class="clear-data-btn" id="clearDataBtn" title="Daten und/oder Archiv löschen">Clear Data</button>
-        </aside>
-        <!-- Main Content -->
-        <main class="main-content" id="mainContent">
-            <input type="file" id="fileInput" accept=".xlsx,.xls" style="display:none" />
-            <div class="sticky-sort-controls" id="stickySort"></div>
-            <div class="table-container" id="tableContainer" style="display:none;">
-                <table class="data-table" id="dataTable"></table>
-            </div>
-            <div class="archive-upload-bar" id="archiveUploadBar" style="display:none;"></div>
-        </main>
-    </div>
-    <!-- Footer ist jetzt direktes Kind von <body> -->
     <footer class="footer-dsgvo">
-        <button class="footer-link" onclick="showPrivacy()" id="privacyLink" aria-label="Datenschutz & Barrierefreiheit anzeigen" title="Datenschutz anzeigen">
-            Privacy
-        </button>
-        <a href="https://github.com/Olivetr33/risker_read-it-" class="footer-link" target="_blank" rel="noopener" aria-label="GitHub Repository" title="GitHub Repository">GitHub</a>
+      <button class="footer-link" onclick="showPrivacy()" id="privacyLink" aria-label="Show privacy notice" title="Show privacy notice">
+        Privacy
+      </button>
+      <a href="https://github.com/Olivetr33/risker_read-it-" class="footer-link" target="_blank" rel="noopener" aria-label="GitHub Repository" title="GitHub Repository">GitHub</a>
     </footer>
-    <!-- Popup -->
+    <!-- Privacy Popup -->
     <div id="popupBg" class="popup-bg" style="display:none;">
-        <div class="popup" id="popupContent">
-            <button class="popup-close" onclick="hidePopup()" title="Schließen" aria-label="Popup schließen">×</button>
-            <div id="popupInner"></div>
-        </div>
+      <div class="popup" id="popupContent">
+        <button class="popup-close" onclick="hidePrivacy()" title="Close" aria-label="Close popup">×</button>
+        <div id="popupInner"></div>
+      </div>
     </div>
-    <!-- Dialog -->
+    <!-- Dialog Popup (e.g. LCSM) -->
     <div id="dialogBg" class="popup-bg" style="display:none;">
-        <div class="popup" id="dialogContent">
-            <div id="dialogInner"></div>
-        </div>
+      <div class="popup" id="dialogContent">
+        <div id="dialogInner"></div>
+      </div>
     </div>
-    <script src="utils.js"></script>
-    <script src="app.js"></script>
+  </div>
+  <script src="utils.js"></script>
+  <script src="app.js"></script>
+  <script>
+    // Privacy Popup Text (English) - IDENTISCH WIE STARTMENÜ
+    const privacyText = `
+    <div class="privacy-popup-content">
+        <h3>Privacy</h3>
+        <p>
+            This application is a purely local web app. <b>No data</b> is transmitted to third parties or external servers.<br>
+            All files and session data remain on your device and can be deleted at any time.
+        </p>
+        <p>
+            <b>GDPR compliance:</b> The application is designed to be fully GDPR-compliant.<br>
+            No personal data is processed outside your device. No cookies or trackers are used.
+        </p>
+        <p style="color:#b3b3b3;font-size:0.98rem;">
+            Contact for privacy inquiries: <a href="mailto:Your Local Privacy Officer">Your Local Privacy Officer</a>
+        </p>
+    </div>
+    `;
+    
+    function showPrivacy() {
+      document.getElementById('popupInner').innerHTML = privacyText;
+      document.getElementById('popupBg').style.display = 'flex';
+    }
+    
+    function hidePrivacy() {
+      document.getElementById('popupBg').style.display = 'none';
+    }
+    
+    document.getElementById('popupBg').addEventListener('click', function(e) {
+      if (e.target === this) {
+        hidePrivacy();
+      }
+    });
+  </script>
 </body>
 </html>

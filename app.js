@@ -12,7 +12,10 @@ No personal data is processed outside your device. No cookies or trackers are us
 </p>
 <p>
 <b>Contact for privacy inquiries:</b>
-<a href="mailto:Your Data Protection Officer">Your Data Protection Officer</a>
+<a href="mailto:Your Local Privacy Officer">Your Local Privacy Officer</a>
+</p>
+<p style="margin-top: 20px;">
+<a href="https://github.com/Olivetr33/risker_read-it-" target="_blank" rel="noopener" style="color: #ffd221;">GitHub Repository</a>
 </p>
 `;
 
@@ -32,6 +35,9 @@ let currentSort = { column: '', direction: 'desc' };
 let erledigtRows = [];
 let selectedLCSM = null;
 let archiveMode = false;
+
+// Only display these columns + Done button
+const displayColumns = ["ARR", "Customer Name", "LCSM", "Total Risk", "Actions"];
 
 // Sidebar Actions
 window.goToStart = function() {
@@ -135,9 +141,163 @@ function showLCSMSelection() {
   const lcsmCol = headers.find(h => h.toLowerCase().includes("lcsm"));
   const uniqueLCSM = [...new Set(excelData.map(row => row[lcsmCol]).filter(Boolean))];
   dialogInner.innerHTML = `
-    <!-- ... Rest deiner Dialog-Logik ... -->
+    <div class="lcsm-popup">
+      <h2>Select LCSM</h2>
+      <div class="lcsm-btn-group">
+        ${uniqueLCSM.map(lcsm => `
+          <button class="lcsm-btn" onclick="selectLCSM('${lcsm}')">${lcsm}</button>
+        `).join('')}
+      </div>
+    </div>
   `;
   dialogBg.style.display = 'flex';
 }
 
-// ... (Rest deiner app.js bleibt wie gehabt)
+window.selectLCSM = function(lcsm) {
+  selectedLCSM = lcsm;
+  filteredData = excelData.filter(row => row["LCSM"] === lcsm);
+  renderTable(filteredData);
+  document.getElementById('dialogBg').style.display = 'none';
+  updateTableVisibility();
+};
+
+function renderSortControls() {
+  const stickySort = document.getElementById('stickySort');
+  const sortableColumns = displayColumns.filter(col => col !== 'Actions');
+  if (!sortableColumns || sortableColumns.length === 0) return;
+  
+  stickySort.innerHTML = `
+    <div class="sort-controls">
+      <label for="sortSelect">Sort by:</label>
+      <select id="sortSelect" class="sort-select">
+        ${sortableColumns.map(column => `<option value="${column}">${column}</option>`).join('')}
+      </select>
+      <button class="sort-btn" id="sortBtn" onclick="toggleSort()">↓</button>
+    </div>
+  `;
+}
+
+// KORRIGIERTE renderTable Funktion - mit Done Button und korrekter Customer Name Auslesung
+function renderTable(data) {
+  const tableContainer = document.getElementById('tableContainer');
+  const dataTable = document.getElementById('dataTable');
+  
+  if (!data || data.length === 0) {
+    tableContainer.style.display = 'none';
+    return;
+  }
+  
+  // Fill table with desired columns + Done button
+  let tableHTML = '<thead><tr>';
+  displayColumns.forEach(column => {
+    tableHTML += `<th>${column}</th>`;
+  });
+  tableHTML += '</tr></thead><tbody>';
+  
+  data.forEach((row, index) => {
+    tableHTML += '<tr>';
+    displayColumns.forEach(column => {
+      if (column === 'Actions') {
+        tableHTML += `<td><button class="complete-btn" onclick="markAsDone(${index})">Done</button></td>`;
+      } else {
+        let value = '';
+        
+        // KORRIGIERTE Customer Name Auslesung
+        if (column === 'Customer Name') {
+          value = row["Customer Name"] || row["Customer"] || row["Name"] || row["Client Name"] || row["Company"] || '';
+        } else {
+          value = row[column] || '';
+        }
+        
+        // Formatting for ARR and Total Risk (numbers)
+        if ((column === 'ARR' || column === 'Total Risk') && value !== '') {
+          const numValue = parseFloat(value);
+          tableHTML += `<td>${isNaN(numValue) ? value : numValue.toLocaleString()}</td>`;
+        } else {
+          tableHTML += `<td>${value}</td>`;
+        }
+      }
+    });
+    tableHTML += '</tr>';
+  });
+  
+  tableHTML += '</tbody>';
+  dataTable.innerHTML = tableHTML;
+  
+  // Show table
+  tableContainer.style.display = 'flex';
+  tableContainer.style.visibility = 'visible';
+  tableContainer.style.opacity = '1';
+}
+
+// Done Button Funktionalität
+window.markAsDone = function(index) {
+  if (confirm('Mark this entry as done?')) {
+    const completedRow = filteredData[index];
+    erledigtRows.push(completedRow);
+    filteredData.splice(index, 1);
+    renderTable(filteredData);
+    updateTableVisibility();
+  }
+};
+
+function updateTableVisibility() {
+  const tableContainer = document.getElementById('tableContainer');
+  if (filteredData && filteredData.length > 0) {
+    tableContainer.style.display = 'flex';
+    tableContainer.style.visibility = 'visible';
+    tableContainer.style.opacity = '1';
+  } else {
+    tableContainer.style.display = 'none';
+  }
+}
+
+function toggleSort() {
+  const sortSelect = document.getElementById('sortSelect');
+  const sortBtn = document.getElementById('sortBtn');
+  const column = sortSelect.value;
+  
+  if (currentSort.column === column) {
+    currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+  } else {
+    currentSort.column = column;
+    currentSort.direction = 'desc';
+  }
+  
+  sortBtn.textContent = currentSort.direction === 'asc' ? '↑' : '↓';
+  
+  filteredData.sort((a, b) => {
+    let aVal = a[column] || 0;
+    let bVal = b[column] || 0;
+    
+    // Numeric sorting for ARR and Total Risk
+    if (column === 'ARR' || column === 'Total Risk') {
+      aVal = parseFloat(aVal) || 0;
+      bVal = parseFloat(bVal) || 0;
+    }
+    
+    if (currentSort.direction === 'asc') {
+      return aVal > bVal ? 1 : -1;
+    } else {
+      return aVal < bVal ? 1 : -1;
+    }
+  });
+  
+  renderTable(filteredData);
+}
+
+function handleClearData() {
+  if (confirm('Delete all data?')) {
+    excelData = [];
+    filteredData = [];
+    erledigtRows = [];
+    headers = [];
+    selectedLCSM = null;
+    document.getElementById('tableContainer').style.display = 'none';
+    document.getElementById('stickySort').innerHTML = '';
+  }
+}
+
+function mergeSessionWithData(erledigtRows, excelData) {
+  return excelData;
+}

@@ -69,9 +69,8 @@
         }
         .privacy-start {
             position: fixed;
-            left: 50%;
+            left: calc(50% - 35px);
             bottom: 24px;
-            transform: translateX(-50%);
             background: none;
             color: #fff;
             font-size: 1rem;
@@ -79,10 +78,15 @@
             opacity: 0.85;
             z-index: 3000;
             cursor: pointer;
-            padding: 6px 18px;
+            padding: 0;
             border-radius: 12px;
             letter-spacing: 0.01em;
             transition: background 0.18s, color 0.18s;
+            width: 70px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         .privacy-start:hover, .privacy-start:focus {
             background: rgba(255,255,255,0.10);
@@ -152,11 +156,11 @@
         </div>
     </div>
     <!-- Privacy Button (immer sichtbar) -->
-    <button class="privacy-start" onclick="showPrivacy()" id="privacyBtnStart" aria-label="Datenschutz anzeigen">Privacy</button>
+    <button class="privacy-start" onclick="showPrivacy()" id="privacyBtnStart" aria-label="Show privacy notice">Privacy</button>
     <!-- Popup für Privacy -->
     <div id="popupBg" class="popup-bg" style="display:none;">
         <div class="popup" id="popupContent">
-            <button class="popup-close" onclick="hidePopup()" title="Schließen" aria-label="Popup schließen">×</button>
+            <button class="popup-close" onclick="hidePopup()" title="Close" aria-label="Close popup">×</button>
             <div id="popupInner"></div>
         </div>
     </div>
@@ -176,17 +180,17 @@
         // Privacy-Logik wie in app.js
         const privacyText = `
         <div class="privacy-popup-content">
-            <h3>Datenschutz</h3>
+            <h3>Privacy</h3>
             <p>
-                Diese Anwendung ist eine rein lokale Web-App. Es werden <b>keine Daten</b> an Dritte oder externe Server übertragen.<br>
-                Alle Dateien und Sitzungsdaten verbleiben auf deinem Gerät und können jederzeit lokal gelöscht werden.
+                This application is a purely local web app. <b>No data</b> is transmitted to third parties or external servers.<br>
+                All files and session data remain on your device and can be deleted at any time.
             </p>
             <p>
-                <b>DSGVO-Konformität:</b> Die Anwendung ist so konzipiert, dass sie vollständig DSGVO-konform ist.<br>
-                Es werden keine personenbezogenen Daten außerhalb deines Geräts verarbeitet. Es werden keine Cookies oder Tracker eingesetzt.
+                <b>GDPR compliance:</b> The application is designed to be fully GDPR-compliant.<br>
+                No personal data is processed outside your device. No cookies or trackers are used.
             </p>
             <p style="color:#b3b3b3;font-size:0.98rem;">
-                Kontakt für Datenschutz-Anfragen: <a href="mailto:saberton24@outlook.de">saberton24@outlook.de</a>
+                Contact for privacy inquiries: <a href="mailto:Your Local Privacy Officer">Your Local Privacy Officer</a>
             </p>
         </div>
         `;
