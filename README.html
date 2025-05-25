@@ -1,226 +1,73 @@
-# NO MORE RISK! 🛡️
+# NO MORE RISK!
 
-> Professional Risk Management System - Secure • Efficient • Reliable
+Professional Risk Management System - Secure • Efficient • Reliable
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![GitHub stars](https://img.shields.io/github/stars/yourusername/no-more-risk.svg)](https://github.com/yourusername/no-more-risk/stargazers)
-[![GitHub issues](https://img.shields.io/github/issues/yourusername/no-more-risk.svg)](https://github.com/yourusername/no-more-risk/issues)
-[![GitHub forks](https://img.shields.io/github/forks/yourusername/no-more-risk.svg)](https://github.com/yourusername/no-more-risk/network)
+## About The Project
 
-## 📋 Table of Contents
+NO MORE RISK! is a comprehensive Excel data analysis tool that allows you to **import and evaluate Excel files with specific column structures** for professional risk assessment. The application processes Excel spreadsheets containing customer data, risk metrics, and financial information to provide aggregated risk analysis and management capabilities.
 
-- [About The Project](#about-the-project)
-- [Features](#features)
-- [Built With](#built-with)
-- [Getting Started](#getting-started)
-  - [Prerequisites](#prerequisites)
-  - [Installation](#installation)
-- [Usage](#usage)
-- [Screenshots](#screenshots)
-- [Contributing](#contributing)
-- [License](#license)
-- [Contact](#contact)
-- [Acknowledgments](#acknowledgments)
+### Excel Import & Analysis Features
 
-## 🎯 About The Project
+This application is designed to work with Excel files (.xlsx/.xls) that contain the following column structure:
 
-NO MORE RISK! is a comprehensive, client-side risk management application designed for professional risk assessment and customer data analysis. This web application provides secure, local data processing without transmitting sensitive information to external servers.
+- **Customer identification**: `Customer Number` or `Customer ID`
+- **Customer information**: `Customer Name`, `LCSM` (Lead Customer Success Manager)
+- **Risk categories**: `Contact Risk`, `Update Risk`, `Value Risk`, `Contract Risk`, `Objective Risk`
+- **Financial data**: `Total Risk`, `ARR` (Annual Recurring Revenue)
 
-### Why NO MORE RISK!?
+The system automatically **aggregates data by customer**, calculates risk scores, and provides filtering and sorting capabilities for comprehensive risk management analysis.
 
-- **🔒 Privacy First**: All data processing happens locally on your device
-- **⚡ Fast & Efficient**: Real-time risk calculations and data visualization
-- **📊 Professional Tools**: Advanced Excel integration and data aggregation
-- **🎨 Modern UI**: Clean, responsive design with video backgrounds
-- **🌐 GDPR Compliant**: Built with privacy regulations in mind
+## Key Features
 
-## ✨ Features
+- **Excel File Import**: Direct import and processing of Excel (.xlsx/.xls) files with automatic data validation
+- **Data Aggregation**: Automatically groups and sums risk values by customer for consolidated analysis
+- **Risk Assessment**: Comprehensive risk calculation across multiple categories (Contact, Update, Value, Contract, Objective)
+- **Customer Management**: Organized customer data with LCSM assignment and filtering
+- **Advanced Filtering**: Sort and filter data by various criteria (ARR, Total Risk, Customer Name, LCSM)
+- **Privacy First**: All data processing happens locally on your device - no external server transmission
+- **Responsive Design**: Works seamlessly on desktop and mobile devices
+- **Interactive UI**: Immersive video backgrounds and smooth animations
+- **Archive System**: Manage completed risk assessments with "Done" functionality
+- **GDPR Compliant**: Built with privacy regulations in mind
 
-- **📈 Risk Assessment**: Comprehensive risk calculation across multiple categories
-- **📋 Excel Integration**: Direct import and processing of Excel (.xlsx/.xls) files
-- **👥 Customer Management**: Aggregated customer data with LCSM assignment
-- **🔍 Advanced Filtering**: Sort and filter data by various criteria
-- **📱 Responsive Design**: Works seamlessly on desktop and mobile devices
-- **🎥 Interactive UI**: Immersive video backgrounds and smooth animations
-- **🗃️ Archive System**: Manage completed risk assessments
-- **🔐 Local Storage**: All data remains on your device
+## Excel File Requirements
 
-## 🛠️ Built With
+Your Excel file must meet the following requirements for successful import:
+
+### Required Columns:
+- `Customer Number` or `Customer ID` - Unique identifier for each customer
+- `Customer Name` - Name of the customer/company
+- `LCSM` - Lead Customer Success Manager assigned
+- `Contact Risk` - Numerical risk score for contact-related issues
+- `Update Risk` - Numerical risk score for update-related issues  
+- `Value Risk` - Numerical risk score for value-related issues
+- `Contract Risk` - Numerical risk score for contract-related issues
+- `Objective Risk` - Numerical risk score for objective-related issues
+- `Total Risk` - Overall risk score (can be calculated automatically)
+- `ARR` - Annual Recurring Revenue
+
+### File Format Requirements:
+- **File extension**: `.xlsx` or `.xls`
+- **Unique headers**: Each column must have a unique header name
+- **Data consistency**: Numerical fields should contain valid numbers
+- **File size limit**: Recommended under 10 MB for optimal performance
+
+## Built With
 
 - **Frontend**: HTML5, CSS3, JavaScript (ES6+)
-- **Data Processing**: SheetJS (XLSX library)
+- **Excel Processing**: SheetJS (XLSX library) for client-side Excel file parsing
 - **Styling**: Custom CSS with CSS Grid & Flexbox
-- **Media**: MP4 video backgrounds
-- **Architecture**: Client-side only (no backend required)
+- **Data Handling**: Local storage and processing (no backend required)
+- **UI/UX**: MP4 video backgrounds with responsive design
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
-Before you begin, ensure you have:
-
 - A modern web browser (Chrome, Firefox, Safari, Edge)
-- Basic understanding of Excel file formats
-- Your risk assessment data in Excel format
+- Excel files with the required column structure
+- Basic understanding of risk management concepts
 
 ### Installation
 
-1. **Clone the repository**
-git clone https://github.com/yourusername/no-more-risk.git
-
-2. **Navigate to the project directory**
-cd no-more-risk
-
-
-3. **Add your background video**
-- Place your `background.mp4` file in the root directory
-- Ensure the video is optimized for web (recommended: 1920x1080, H.264)
-
-4. **Open the application**
-- Simply open `index.html` in your web browser
-- No server setup required!
-
-## 📖 Usage
-
-### Basic Workflow
-
-1. **Start the Application**
-- Open `index.html` in your browser
-- Click "Start Application" to enter the main interface
-
-2. **Upload Your Data**
-- Click "Upload Data" in the sidebar
-- Select your Excel file (.xlsx or .xls)
-- The system will automatically aggregate data by customer
-
-3. **Select LCSM**
-- Choose the relevant LCSM (Lead Customer Success Manager)
-- Data will be filtered accordingly
-
-4. **Analyze Results**
-- View aggregated risk scores
-- Sort by different criteria (ARR, Total Risk, etc.)
-- Mark entries as "Done" when processed
-
-5. **Manage Archive**
-- Access completed assessments in the Archive section
-- Clear data when no longer needed
-
-### Excel File Format
-
-Your Excel file should contain the following columns:
-- `Customer Number` or `Customer ID`
-- `Customer Name`
-- `LCSM`
-- `Contact Risk`
-- `Update Risk`
-- `Value Risk`
-- `Contract Risk`
-- `Objective Risk`
-- `Total Risk`
-- `ARR`
-
-## 📸 Screenshots
-
-### Start Screen
-![Start Screen](screenshots/start-screen.png)
-
-### Main Dashboard
-![Dashboard](screenshots/dashboard.png)
-
-### Data Upload
-![Upload](screenshots/upload.png)
-
-### Risk Analysis
-![Analysis](screenshots/analysis.png)
-
-## 🤝 Contributing
-
-Contributions make the open source community an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
-
-### How to Contribute
-
-1. **Fork the Project**
-2. **Create your Feature Branch**
-git checkout -b feature/AmazingFeature
-
-3. **Commit your Changes**
-git commit -m 'Add some AmazingFeature'
-
-4. **Push to the Branch**
-git push origin feature/AmazingFeature
-
-5. **Open a Pull Request**
-
-### Development Guidelines
-
-- Follow existing code style and conventions
-- Test your changes thoroughly
-- Update documentation as needed
-- Ensure GDPR compliance for any data handling features
-
-## 📄 License
-
-Distributed under the MIT License. See `LICENSE` for more information.
-
-## 📞 Contact
-
-**Project Maintainer**: Your Name
-- Email: [your.email@example.com](mailto:your.email@example.com)
-- GitHub: [@yourusername](https://github.com/yourusername)
-- LinkedIn: [Your LinkedIn](https://linkedin.com/in/yourprofile)
-
-**Project Link**: [https://github.com/yourusername/no-more-risk](https://github.com/yourusername/no-more-risk)
-
-## 🙏 Acknowledgments
-
-- [SheetJS](https://sheetjs.com/) for Excel file processing
-- [Font Awesome](https://fontawesome.com/) for icons
-- [GitHub Pages](https://pages.github.com/) for hosting
-- All contributors who helped improve this project
-
----
-
-<div align="center">
-<p>Made with ❤️ for better risk management</p>
-<p>⭐ Star this repo if you find it helpful!</p>
-</div>
-
-MIT License
-
-Copyright (c) 2025 Johanna Sofia Müllenholz
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-
-# Contributing to NO MORE RISK!
-
-Thank you for your interest in contributing! Please read these guidelines before submitting contributions.
-
-## Code of Conduct
-Be respectful and professional in all interactions.
-
-## How to Contribute
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
-
-## Reporting Issues
-Use the GitHub issue tracker to report bugs or request features.
+1. Clone the repository
