@@ -56,9 +56,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const fileInput = document.getElementById('fileInput');
     fileInput.addEventListener('change', handleFile, false);
 
-    // Reset file input on every click to allow same file re-upload
     document.getElementById('uploadDataBtn').onclick = function() {
-        fileInput.value = ""; // reset to allow re-upload same file
+        fileInput.value = "";
         fileInput.click();
     };
 
@@ -66,11 +65,8 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('changeLcsmBtn').onclick = window.showLCSMDialog;
     document.getElementById('archiveBtn').onclick = window.showArchive;
     document.getElementById('logoutBtn').onclick = window.logout;
-
-    // Clear Data Button
     document.getElementById('clearDataBtn').onclick = handleClearData;
 
-    // Popup/Dialogs close on overlay click
     const popupBg = document.getElementById('popupBg');
     if (popupBg) {
         popupBg.addEventListener('click', function(e){
@@ -98,13 +94,13 @@ function handleFile(e) {
         const worksheet = workbook.Sheets[sheet];
         const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
         headers = json[0];
-        excelData = json.slice(1).map(row => {
+        let rawData = json.slice(1).map(row => {
             let obj = {};
             headers.forEach((h,i) => obj[h] = row[i]);
             return obj;
         });
-        // Aggregation nach Kunde
-        excelData = aggregateDataByCustomer(excelData);
+        // Aggregation by customer
+        excelData = aggregateDataByCustomer(rawData);
         filteredData = mergeSessionWithData(erledigtRows, excelData);
         showLCSMSelection();
         renderSortControls();
@@ -114,12 +110,12 @@ function handleFile(e) {
     reader.readAsArrayBuffer(file);
 }
 
-// Aggregation: fasst mehrere Zeilen pro Kunde zusammen und summiert Risiko-Werte
+// Aggregation: group by customer and sum risk values
 function aggregateDataByCustomer(data) {
     const grouped = {};
     data.forEach(row => {
         const key = row["Customer Number"] || row["Customer ID"];
-        if (!key) return; // skip rows without customer number
+        if (!key) return;
         if (!grouped[key]) {
             grouped[key] = {...row};
             ["Contact Risk", "Update Risk", "Value Risk", "Contract Risk", "Objective Risk", "Total Risk", "ARR"].forEach(field => {
@@ -166,7 +162,7 @@ function filterByLCSM() {
     updateTableVisibility();
 }
 
-// Table Rendering (same formatting for Archive and Start)
+// Table Rendering
 function renderTable(data) {
     const table = document.getElementById('dataTable');
     if (!headers.length || !data.length) {
@@ -233,7 +229,7 @@ window.removeRow = function(customerNum) {
     updateTableVisibility();
 };
 
-// Sort Controls (modern, without LCSM filter)
+// Sort Controls
 function renderSortControls() {
     const sticky = document.getElementById('stickySort');
     sticky.innerHTML = `
@@ -290,14 +286,18 @@ function sortAndRenderTable() {
     renderTable(sorted);
 }
 
-// Show table only if data is present
+// Show/hide table and filter bar together, also for archive
 function updateTableVisibility() {
     const tableContainer = document.getElementById('tableContainer');
-    if (headers.length && ((archiveMode && erledigtRows.length) || (!archiveMode && filteredData.length))) {
-        tableContainer.style.display = '';
+    const stickySort = document.getElementById('stickySort');
+    let showTable = false;
+    if (archiveMode) {
+        showTable = erledigtRows.length > 0 && headers.length > 0;
     } else {
-        tableContainer.style.display = 'none';
+        showTable = headers.length && filteredData.length;
     }
+    tableContainer.style.display = showTable ? '' : 'none';
+    stickySort.style.display = showTable ? '' : 'none';
 }
 
 // Clear Data Button logic with English archive query
@@ -315,7 +315,6 @@ function handleClearData() {
         if (keepArchive) {
             // Only clear table data, keep archive
             excelData = [];
-            headers = [];
             filteredData = [];
             selectedLCSM = null;
             archiveMode = false;
@@ -345,7 +344,7 @@ function handleClearData() {
     }
 }
 
-// Merge Session Helper (unchanged)
+// Merge Session Helper
 function mergeSessionWithData(session, data) {
     const erledigtIds = new Set((session || []).map(row =>
         row["Customer Number"] || row["Customer ID"]));
