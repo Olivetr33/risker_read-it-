@@ -1,33 +1,7 @@
-// Privacy Popup Text (English)
-const privacyText = `
-<h2>Privacy</h2>
-<p>
-This application is a purely local web app.<br>
-<b>No data</b> is transmitted to third parties or external servers.<br>
-All files and session data remain on your device and can be deleted at any time.
-</p>
-<p>
-<b>GDPR compliance:</b> The application is designed to be fully GDPR-compliant.<br>
-No personal data is processed outside your device. No cookies or trackers are used.
-</p>
-<p>
-<b>Contact for privacy inquiries:</b>
-<a href="mailto:Your Local Privacy Officer">Your Local Privacy Officer</a>
-</p>
-<p style="margin-top: 20px;">
-<a href="https://github.com/Olivetr33/risker_read-it-" target="_blank" rel="noopener" style="color: #ffd221;">GitHub Repository</a>
-</p>
-`;
+// app.js - KORRIGIERT: Synchrone ultra-robuste Zahlenextraktion
 
-function showPrivacy() {
-  document.getElementById('popupInner').innerHTML = privacyText;
-  document.getElementById('popupBg').style.display = 'flex';
-}
-function hidePrivacy() {
-  document.getElementById('popupBg').style.display = 'none';
-}
+const { DebugLogger, AutoSave, DataUtils, SessionManager, FileInputUtils, PrivacyUtils } = window.AppUtils;
 
-// App State
 let excelData = [];
 let headers = [];
 let filteredData = [];
@@ -35,269 +9,1194 @@ let currentSort = { column: '', direction: 'desc' };
 let erledigtRows = [];
 let selectedLCSM = null;
 let archiveMode = false;
+let aggregatedData = [];
+let originalAggregatedData = [];
 
-// Only display these columns + Done button
+let sliderOpen = false;
+let sliderMode = 'archive';
+let filteredSliderData = [];
+let currentSliderSort = { column: 'Total Risk', direction: 'desc' };
+
 const displayColumns = ["ARR", "Customer Name", "LCSM", "Total Risk", "Actions"];
 
-// Sidebar Actions
-window.goToStart = function() {
-  archiveMode = false;
-  document.getElementById('archiveUploadBar').style.display = 'none';
-  renderTable(filteredData);
-  updateTableVisibility();
-};
-window.showLCSMDialog = function() {
-  showLCSMSelection();
-};
-window.showArchive = function() {
-  archiveMode = true;
-  renderTable(erledigtRows);
-  document.getElementById('archiveUploadBar').style.display = 'block';
-  updateTableVisibility();
-};
-window.logout = function() {
-  window.location = "index.html";
+// KORRIGIERT: IDENTISCHE Spalten-Mapping in allen Dateien
+const COLUMN_MAPPINGS = {
+    'LCSM': ['LCSM', 'lcsm', 'Lcsm', 'LcsM', 'SACHBEARBEITER', 'sachbearbeiter', 'Sachbearbeiter', 'CSM', 'csm', 'Manager', 'manager', 'MANAGER', 'Betreuer', 'betreuer', 'BETREUER'],
+    'Customer Name': ['Customer Name', 'customer name', 'CUSTOMER NAME', 'CustomerName', 'customername', 'CUSTOMERNAME', 'Customer Number', 'customer number', 'CUSTOMER NUMBER', 'CustomerNumber', 'customernumber', 'CUSTOMERNUMBER', 'Kunde', 'kunde', 'KUNDE', 'Kundenname', 'kundenname', 'KUNDENNAME', 'Kundennummer', 'kundennummer', 'KUNDENNUMMER', 'Name', 'name', 'NAME', 'Client', 'client', 'CLIENT'],
+    'Total Risk': ['Total Risk', 'total risk', 'TOTAL RISK', 'TotalRisk', 'totalrisk', 'TOTALRISK', 'Risk', 'risk', 'RISK', 'Risiko', 'risiko', 'RISIKO', 'Score', 'score', 'SCORE', 'Risk Score', 'risk score', 'RISK SCORE', 'RiskScore', 'riskscore', 'RISKSCORE'],
+    'ARR': ['ARR', 'arr', 'Arr', 'Annual Recurring Revenue', 'annual recurring revenue', 'ANNUAL RECURRING REVENUE', 'Revenue', 'revenue', 'REVENUE', 'Umsatz', 'umsatz', 'UMSATZ', 'Vertragswert', 'vertragswert', 'VERTRAGSWERT', 'Value', 'value', 'VALUE', 'Wert', 'wert', 'WERT', 'Amount', 'amount', 'AMOUNT']
 };
 
-// File Upload
-document.addEventListener('DOMContentLoaded', function() {
-  const fileInput = document.getElementById('fileInput');
-  fileInput.addEventListener('change', handleFile, false);
-  document.getElementById('uploadDataBtn').onclick = function() {
-    fileInput.value = "";
-    fileInput.click();
-  };
-  document.getElementById('startBtn').onclick = window.goToStart;
-  document.getElementById('changeLcsmBtn').onclick = window.showLCSMDialog;
-  document.getElementById('archiveBtn').onclick = window.showArchive;
-  document.getElementById('logoutBtn').onclick = window.logout;
-  document.getElementById('clearDataBtn').onclick = handleClearData;
-  const popupBg = document.getElementById('popupBg');
-  if (popupBg) {
-    popupBg.addEventListener('click', function(e){
-      if(e.target === this) hidePrivacy();
-    });
-  }
-  const dialogBg = document.getElementById('dialogBg');
-  if (dialogBg) {
-    dialogBg.addEventListener('click', function(e){
-      if(e.target === this) this.style.display = 'none';
-    });
-  }
-  updateTableVisibility();
-});
-
-function handleFile(e) {
-  const file = e.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = function(event) {
-    const data = new Uint8Array(event.target.result);
-    const workbook = XLSX.read(data, { type: 'array' });
-    const sheet = workbook.SheetNames[0];
-    const worksheet = workbook.Sheets[sheet];
-    const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-    headers = json[0];
-    let rawData = json.slice(1).map(row => {
-      let obj = {};
-      headers.forEach((h,i) => obj[h] = row[i]);
-      return obj;
-    });
-    // Aggregation by customer
-    excelData = aggregateDataByCustomer(rawData);
-    filteredData = mergeSessionWithData(erledigtRows, excelData);
-    showLCSMSelection();
-    renderSortControls();
-    document.getElementById('archiveUploadBar').style.display = archiveMode ? 'block' : 'none';
-    updateTableVisibility();
-  };
-  reader.readAsArrayBuffer(file);
-}
-
-// Aggregation: group by customer and sum risk values
-function aggregateDataByCustomer(data) {
-  const grouped = {};
-  data.forEach(row => {
-    const key = row["Customer Number"] || row["Customer ID"];
-    if (!key) return;
-    if (!grouped[key]) {
-      grouped[key] = {...row};
-      ["Contact Risk", "Update Risk", "Value Risk", "Contract Risk", "Objective Risk", "Total Risk", "ARR"].forEach(field => {
-        grouped[key][field] = parseFloat(row[field]) || 0;
-      });
-    } else {
-      ["Contact Risk", "Update Risk", "Value Risk", "Contract Risk", "Objective Risk", "Total Risk", "ARR"].forEach(field => {
-        grouped[key][field] += parseFloat(row[field]) || 0;
-      });
+// KORRIGIERT: IDENTISCHE Spaltenerkennung in allen Dateien
+function findColumnName(headers, targetColumn) {
+    const possibleNames = COLUMN_MAPPINGS[targetColumn] || [targetColumn];
+    
+    for (const header of headers) {
+        for (const possibleName of possibleNames) {
+            if (header.toLowerCase().trim() === possibleName.toLowerCase().trim()) {
+                console.log(`APP: Found column mapping: "${header}" -> "${targetColumn}"`);
+                return header;
+            }
+        }
     }
-  });
-  return Object.values(grouped);
+    
+    console.warn(`APP: Column not found for ${targetColumn}. Available headers:`, headers);
+    return null;
 }
 
-// LCSM Dialog
-function showLCSMSelection() {
-  const dialogBg = document.getElementById('dialogBg');
-  const dialogInner = document.getElementById('dialogInner');
-  const lcsmCol = headers.find(h => h.toLowerCase().includes("lcsm"));
-  const uniqueLCSM = [...new Set(excelData.map(row => row[lcsmCol]).filter(Boolean))];
-  dialogInner.innerHTML = `
-    <div class="lcsm-popup">
-      <h2>Select LCSM</h2>
-      <div class="lcsm-btn-group">
-        ${uniqueLCSM.map(lcsm => `
-          <button class="lcsm-btn" onclick="selectLCSM('${lcsm}')">${lcsm}</button>
-        `).join('')}
-      </div>
-    </div>
-  `;
-  dialogBg.style.display = 'flex';
+// KORRIGIERT: IDENTISCHE ultra-robuste Zahlenextraktion in allen Dateien
+function extractNumber(value) {
+    console.log(`APP: Processing value: "${value}" (type: ${typeof value})`);
+    
+    if (typeof value === 'number' && !isNaN(value)) {
+        console.log(`APP: Already a number: ${value}`);
+        return value;
+    }
+    
+    if (value === undefined || value === null || value === '') {
+        console.log('APP: Empty value, returning 0');
+        return 0;
+    }
+    
+    let stringValue = String(value).trim();
+    
+    if (stringValue === '' || stringValue === 'N/A' || stringValue === 'n/a' || stringValue === 'NULL') {
+        console.log('APP: Invalid string value, returning 0');
+        return 0;
+    }
+    
+    console.log(`APP: Processing string: "${stringValue}"`);
+    
+    let cleanValue = stringValue;
+    
+    // Entferne Währungszeichen, Buchstaben, Leerzeichen und Prozentzeichen
+    cleanValue = cleanValue.replace(/[€$£¥₹₽¢₩₪₨₦₡₵₴₸₼₾₿]/g, '');
+    cleanValue = cleanValue.replace(/[A-Za-z]/g, '');
+    cleanValue = cleanValue.replace(/[\s]/g, '');
+    cleanValue = cleanValue.replace(/[%]/g, '');
+    
+    console.log(`APP: After removing currency/letters: "${cleanValue}"`);
+    
+    // Behandle verschiedene Zahlenformate
+    if (cleanValue.includes(',') && cleanValue.includes('.')) {
+        const lastComma = cleanValue.lastIndexOf(',');
+        const lastDot = cleanValue.lastIndexOf('.');
+        
+        if (lastDot > lastComma) {
+            // Amerikanisches Format: 1,234.56
+            cleanValue = cleanValue.replace(/,/g, '');
+            console.log(`APP: American format detected: "${cleanValue}"`);
+        } else {
+            // Europäisches Format: 1.234,56
+            cleanValue = cleanValue.replace(/\./g, '').replace(',', '.');
+            console.log(`APP: European format detected: "${cleanValue}"`);
+        }
+    } else if (cleanValue.includes(',')) {
+        const commaCount = (cleanValue.match(/,/g) || []).length;
+        const commaPos = cleanValue.indexOf(',');
+        const afterComma = cleanValue.substring(commaPos + 1);
+        
+        if (commaCount === 1 && afterComma.length <= 3 && /^\d+$/.test(afterComma)) {
+            // Dezimaltrennzeichen: 123,45
+            cleanValue = cleanValue.replace(',', '.');
+            console.log(`APP: Comma as decimal separator: "${cleanValue}"`);
+        } else {
+            // Tausendertrennzeichen: 1,234
+            cleanValue = cleanValue.replace(/,/g, '');
+            console.log(`APP: Comma as thousand separator: "${cleanValue}"`);
+        }
+    } else if (cleanValue.includes('.')) {
+        const dotCount = (cleanValue.match(/\./g) || []).length;
+        const dotPos = cleanValue.lastIndexOf('.');
+        const afterDot = cleanValue.substring(dotPos + 1);
+        
+        if (dotCount === 1 && afterDot.length <= 3 && /^\d+$/.test(afterDot)) {
+            // Dezimaltrennzeichen: 123.45
+            console.log(`APP: Dot as decimal separator: "${cleanValue}"`);
+        } else {
+            // Tausendertrennzeichen: 1.234
+            cleanValue = cleanValue.replace(/\./g, '');
+            console.log(`APP: Dot as thousand separator: "${cleanValue}"`);
+        }
+    }
+    
+    cleanValue = cleanValue.replace(/[^\d.\-]/g, '');
+    
+    console.log(`APP: Final cleaned value: "${cleanValue}"`);
+    
+    const result = parseFloat(cleanValue) || 0;
+    console.log(`APP: Final extracted number: ${result}`);
+    
+    return result;
 }
 
-window.selectLCSM = function(lcsm) {
-  selectedLCSM = lcsm;
-  filteredData = excelData.filter(row => row["LCSM"] === lcsm);
-  renderTable(filteredData);
-  document.getElementById('dialogBg').style.display = 'none';
-  updateTableVisibility();
+// KORRIGIERT: IDENTISCHE Datenextraktion in allen Dateien
+function extractCustomerData(rawData, headers) {
+    console.log('=== APP: Extracting customer data with ultra-robust number conversion ===');
+    console.log('APP: Available headers:', headers);
+    
+    const lcsmColumn = findColumnName(headers, 'LCSM');
+    const customerColumn = findColumnName(headers, 'Customer Name');
+    const riskColumn = findColumnName(headers, 'Total Risk');
+    const arrColumn = findColumnName(headers, 'ARR');
+    
+    console.log('APP: Column mappings found:', {
+        LCSM: lcsmColumn,
+        'Customer Name': customerColumn,
+        'Total Risk': riskColumn,
+        'ARR': arrColumn
+    });
+    
+    return rawData.map((row, index) => {
+        const customerName = customerColumn ? (row[customerColumn] || `Customer ${index + 1}`) : `Customer ${index + 1}`;
+        const lcsm = lcsmColumn ? (row[lcsmColumn] || 'N/A') : 'N/A';
+        
+        const totalRisk = riskColumn ? extractNumber(row[riskColumn]) : 0;
+        const arr = arrColumn ? extractNumber(row[arrColumn]) : 0;
+        
+        const extractedData = {
+            'Customer Name': customerName,
+            'LCSM': lcsm,
+            'Total Risk': totalRisk,
+            'ARR': arr,
+            ...row
+        };
+        
+        console.log(`APP: Extracted customer ${index + 1}:`, {
+            name: customerName,
+            lcsm: lcsm,
+            risk: totalRisk,
+            arr: arr,
+            originalARR: row[arrColumn],
+            originalRisk: row[riskColumn]
+        });
+        
+        return extractedData;
+    });
+}
+
+function saveSession() {
+    const sessionData = {
+        excelData: excelData,
+        filteredData: filteredData,
+        aggregatedData: aggregatedData,
+        originalAggregatedData: originalAggregatedData,
+        selectedLCSM: selectedLCSM,
+        erledigtRows: erledigtRows,
+        headers: headers,
+        currentSort: currentSort,
+        archiveMode: archiveMode,
+        lastSaveTime: AutoSave.lastSaveTime,
+        timestamp: Date.now()
+    };
+    
+    const allKeys = ['riskerSessionData', 'sessionData', 'appData'];
+    for (const key of allKeys) {
+        localStorage.setItem(key, JSON.stringify(sessionData));
+    }
+    
+    SessionManager.save(sessionData);
+    console.log('Session saved to all storage keys');
+}
+
+function restoreSession() {
+    try {
+        const allKeys = ['riskerSessionData', 'sessionData', 'appData'];
+        let sessionData = null;
+        
+        for (const key of allKeys) {
+            try {
+                const data = localStorage.getItem(key);
+                if (data) {
+                    const parsedData = JSON.parse(data);
+                    if (parsedData && (parsedData.excelData || parsedData.filteredData || parsedData.aggregatedData)) {
+                        sessionData = parsedData;
+                        console.log(`Session restored from ${key}`);
+                        break;
+                    }
+                }
+            } catch (e) {
+                console.warn(`Failed to restore from ${key}:`, e);
+            }
+        }
+        
+        if (!sessionData) {
+            console.log('No valid session data found');
+            return false;
+        }
+        
+        excelData = sessionData.excelData || [];
+        filteredData = sessionData.filteredData || [];
+        aggregatedData = sessionData.aggregatedData || [];
+        originalAggregatedData = sessionData.originalAggregatedData || [];
+        selectedLCSM = sessionData.selectedLCSM;
+        erledigtRows = sessionData.erledigtRows || [];
+        headers = sessionData.headers || [];
+        currentSort = sessionData.currentSort || { column: '', direction: 'desc' };
+        archiveMode = sessionData.archiveMode || false;
+        
+        AutoSave.lastSaveTime = sessionData.lastSaveTime;
+        
+        if (filteredData.length > 0) {
+            renderTable(archiveMode ? erledigtRows : DataUtils.getActiveCustomers(filteredData));
+            renderSortControls();
+            updateTableVisibility();
+            
+            if (archiveMode) {
+                const archiveBar = document.getElementById('archiveUploadBar');
+                if (archiveBar) archiveBar.style.display = 'block';
+            } else {
+                const archiveBar = document.getElementById('archiveUploadBar');
+                if (archiveBar) archiveBar.style.display = 'none';
+            }
+        }
+        
+        return true;
+    } catch (error) {
+        console.error('Error restoring session:', error);
+        return false;
+    }
+}
+
+function toggleFooter(hide) {
+    const footer = document.getElementById('footerTransparent');
+    if (footer) {
+        if (hide) {
+            footer.classList.add('hidden');
+            console.log('Footer hidden');
+        } else {
+            footer.classList.remove('hidden');
+            console.log('Footer shown');
+        }
+    }
+}
+
+window.goToStart = function() {
+    console.log('ShowData function called from:', window.location.href);
+    
+    const currentUrl = window.location.href;
+    
+    if (currentUrl.includes('riskmap.html')) {
+        console.log('Redirecting from RiskMap to ShowData');
+        window.location.href = 'app.html';
+        return;
+    }
+    
+    if (sliderOpen) {
+        closeSlider();
+    }
+    
+    archiveMode = false;
+    const archiveBar = document.getElementById('archiveUploadBar');
+    if (archiveBar) {
+        archiveBar.style.display = 'none';
+    }
+    renderTable(DataUtils.getActiveCustomers(filteredData));
+    updateTableVisibility();
+    saveSession();
+    console.log('ShowData function executed');
 };
+
+window.showArchive = function() {
+    console.log('Archive function called - checking current state');
+    
+    const currentUrl = window.location.href;
+    if (currentUrl.includes('riskmap.html')) {
+        console.log('Currently in RiskMap - redirecting to app.html with archive');
+        window.location.href = 'app.html?openArchive=true';
+        return;
+    }
+    
+    if (sliderOpen) {
+        closeSlider();
+    }
+    
+    sliderMode = 'archive';
+    openSlider();
+    console.log('Archive function executed');
+};
+
+window.openHeatmap = function() {
+    console.log('RiskMap toggle function called - checking state');
+    
+    const currentUrl = window.location.href;
+    
+    if (currentUrl.includes('riskmap.html')) {
+        console.log('Currently in RiskMap - closing and returning to ShowData');
+        window.location.href = 'app.html';
+        return;
+    }
+    
+    if (aggregatedData && aggregatedData.length > 0) {
+        console.log('Opening RiskMap from app.html');
+        window.location.href = "riskmap.html";
+    } else {
+        alert('Please upload and process data first before viewing the RiskMap.');
+    }
+};
+
+window.triggerUpload = function() {
+    console.log('Upload Data function called from:', window.location.href);
+    
+    const currentUrl = window.location.href;
+    
+    if (currentUrl.includes('riskmap.html')) {
+        const fileInput = document.getElementById('fileInput');
+        if (fileInput) {
+            fileInput.click();
+        } else {
+            console.error('File input not found in RiskMap');
+        }
+        return;
+    }
+    
+    const newFileInput = FileInputUtils.reset('fileInput');
+    if (newFileInput) {
+        newFileInput.addEventListener('change', handleFile, false);
+        newFileInput.value = "";
+        newFileInput.click();
+    }
+};
+
+window.performLogout = function() {
+    console.log('=== VOLLSTÄNDIGER Logout & Session Clear gestartet ===');
+    
+    try {
+        excelData = [];
+        filteredData = [];
+        aggregatedData = [];
+        originalAggregatedData = [];
+        erledigtRows = [];
+        headers = [];
+        selectedLCSM = null;
+        archiveMode = false;
+        sliderOpen = false;
+        
+        console.log('App state variables cleared');
+        
+        const allKeys = [
+            'riskerSessionData', 'sessionData', 'appData', 'excelData', 'userData',
+            'erledigtRows', 'archivedData', 'completedData', 'doneData',
+            'filteredData', 'aggregatedData', 'originalAggregatedData',
+            'headers', 'currentSort', 'selectedLCSM', 'archiveMode'
+        ];
+        
+        for (const key of allKeys) {
+            try {
+                localStorage.removeItem(key);
+                console.log(`Removed localStorage key: ${key}`);
+            } catch (e) {
+                console.warn(`Failed to remove key ${key}:`, e);
+            }
+        }
+        
+        try {
+            SessionManager.clear();
+            DebugLogger.clear();
+            console.log('SessionManager and DebugLogger cleared');
+        } catch (e) {
+            console.warn('SessionManager clear failed:', e);
+        }
+        
+        try {
+            if (typeof Storage !== "undefined" && window.localStorage) {
+                const allStorageKeys = Object.keys(localStorage);
+                for (const key of allStorageKeys) {
+                    localStorage.removeItem(key);
+                }
+                console.log('All localStorage keys removed:', allStorageKeys.length);
+            }
+        } catch (e) {
+            console.warn('localStorage clear failed:', e);
+        }
+        
+        try {
+            if (typeof Storage !== "undefined" && window.sessionStorage) {
+                const allSessionKeys = Object.keys(sessionStorage);
+                for (const key of allSessionKeys) {
+                    sessionStorage.removeItem(key);
+                }
+                console.log('All sessionStorage keys removed:', allSessionKeys.length);
+            }
+        } catch (e) {
+            console.warn('sessionStorage clear failed:', e);
+        }
+        
+        try {
+            const allCookies = document.cookie.split(";");
+            for (let cookie of allCookies) {
+                const eqPos = cookie.indexOf("=");
+                const name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
+                if (name) {
+                    document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
+                    document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=${window.location.hostname}`;
+                    document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=.${window.location.hostname}`;
+                }
+            }
+            console.log('All cookies cleared');
+        } catch (e) {
+            console.warn('Cookie clear failed:', e);
+        }
+        
+        DebugLogger.add('info', 'VOLLSTÄNDIGER Logout & Session Clear erfolgreich');
+        console.log('=== VOLLSTÄNDIGER Logout & Session Clear ERFOLGREICH ===');
+        
+        setTimeout(function() {
+            try {
+                const timestamp = Date.now();
+                window.location.href = `index.html?clear=${timestamp}`;
+            } catch (e) {
+                try {
+                    window.location.replace(`index.html?clear=${timestamp}`);
+                } catch (e2) {
+                    try {
+                        window.location = `index.html?clear=${timestamp}`;
+                    } catch (e3) {
+                        console.error('All redirect methods failed:', e3);
+                        alert('VOLLSTÄNDIGER Logout & Session Clear erfolgreich. Bitte navigiere manuell zu index.html');
+                    }
+                }
+            }
+        }, 500);
+        
+    } catch (error) {
+        console.error('VOLLSTÄNDIGER Logout & Session Clear error:', error);
+        alert('Logout & Session Clear fehlgeschlagen. Bitte versuche es erneut oder lade die Seite neu.');
+    }
+};
+
+function openSlider() {
+    const sliderPanel = document.getElementById('sliderPanel');
+    const mainContent = document.getElementById('mainContent');
+    const sliderTitle = document.getElementById('sliderTitle');
+    
+    if (sliderPanel && mainContent) {
+        sliderPanel.classList.add('active');
+        mainContent.classList.add('slider-open');
+        sliderOpen = true;
+        
+        toggleFooter(true);
+        
+        sliderTitle.textContent = 'ARCHIVE';
+        
+        updateSliderData();
+        renderSliderContent();
+        
+        DebugLogger.add('info', `${sliderMode} slider opened`);
+    }
+}
+
+function closeSlider() {
+    const sliderPanel = document.getElementById('sliderPanel');
+    const mainContent = document.getElementById('mainContent');
+    
+    if (sliderPanel) sliderPanel.classList.remove('active');
+    if (mainContent) mainContent.classList.remove('slider-open');
+    sliderOpen = false;
+    
+    toggleFooter(false);
+    
+    DebugLogger.add('info', 'Slider closed');
+    console.log('Slider closed successfully');
+}
+
+function updateSliderData() {
+    let data = erledigtRows;
+    
+    filteredSliderData = [...data].sort((a, b) => {
+        let aVal, bVal;
+        
+        if (currentSliderSort.column === 'ARR') {
+            aVal = parseFloat(a['ARR']) || 0;
+            bVal = parseFloat(b['ARR']) || 0;
+        } else if (currentSliderSort.column === 'Total Risk') {
+            aVal = parseFloat(a['Total Risk']) || 0;
+            bVal = parseFloat(b['Total Risk']) || 0;
+        } else {
+            return 0;
+        }
+        
+        if (currentSliderSort.direction === 'asc') {
+            return aVal - bVal;
+        } else {
+            return bVal - aVal;
+        }
+    });
+    
+    renderSliderContent();
+}
+
+function renderSliderContent() {
+    const sliderContent = document.getElementById('sliderContent');
+    if (!sliderContent) return;
+    
+    const totalCustomers = filteredSliderData.length;
+    const highRiskCustomers = filteredSliderData.filter(customer => parseFloat(customer['Total Risk']) > 10).length;
+    const totalARR = filteredSliderData.reduce((sum, customer) => sum + (parseFloat(customer['ARR']) || 0), 0);
+    
+    sliderContent.innerHTML = `
+        <div class="slider-filters-static">
+            <h3>Sort Data</h3>
+            <div class="filter-buttons">
+                <button class="sort-btn ${currentSliderSort.column === 'ARR' ? 'active' : ''}" onclick="sortSlider('ARR')">
+                    <span class="sort-text">ARR</span>
+                    <span class="sort-arrow">${currentSliderSort.column === 'ARR' ? (currentSliderSort.direction === 'asc' ? '↑' : '↓') : '↓'}</span>
+                </button>
+                <button class="sort-btn ${currentSliderSort.column === 'Total Risk' ? 'active' : ''}" onclick="sortSlider('Total Risk')">
+                    <span class="sort-text">Total Risk</span>
+                    <span class="sort-arrow">${currentSliderSort.column === 'Total Risk' ? (currentSliderSort.direction === 'asc' ? '↑' : '↓') : '↓'}</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="slider-stats-static">
+            <div class="stat-item">
+                <span class="stat-label">Total Customers</span>
+                <span class="stat-value">${totalCustomers}</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">High Risk Customers</span>
+                <span class="stat-value">${highRiskCustomers}</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Total ARR</span>
+                <span class="stat-value">€${totalARR.toLocaleString()}</span>
+            </div>
+        </div>
+
+        <div class="slider-table-section">
+            <h3>Customer Data</h3>
+            <div class="slider-table-scrollable">
+                ${renderSliderTable()}
+            </div>
+        </div>
+    `;
+}
+
+function renderSliderTable() {
+    if (filteredSliderData.length === 0) {
+        return '<div style="color: #ccc; text-align: center; padding: 30px; font-size: 16px;">No archived data available</div>';
+    }
+    
+    let tableHTML = `
+        <table class="slider-data-table">
+            <thead>
+                <tr>
+                    <th>Customer Name</th>
+                    <th>LCSM</th>
+                    <th>ARR</th>
+                    <th>Total Risk</th>
+                    <th>Risk Level</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+    
+    filteredSliderData.forEach((customer, index) => {
+        const customerName = customer['Customer Name'] || customer['Kunde'] || customer['Kundenname'] || customer['Customer'] || customer['Name'] || 'Unknown';
+        const lcsm = customer['LCSM'] || 'N/A';
+        const arr = parseFloat(customer['ARR']) || 0;
+        const risk = parseFloat(customer['Total Risk']) || 0;
+        
+        let riskColor = '#4CAF50';
+        let riskBadge = 'LOW';
+        let riskBarWidth = '33%';
+        
+        if (risk >= 6 && risk <= 10) {
+            riskColor = '#FF9800';
+            riskBadge = 'MED';
+            riskBarWidth = '66%';
+        }
+        if (risk >= 11) {
+            riskColor = '#F44336';
+            riskBadge = 'HIGH';
+            riskBarWidth = '100%';
+        }
+        
+        const actionButton = `<button onclick="removeFromArchiveSlider(${index})" style="
+            padding: 6px 12px; background: #f44336; color: white;
+            border: none; border-radius: 6px; cursor: pointer; font-size: 12px;
+        ">Remove</button>`;
+        
+        tableHTML += `
+            <tr>
+                <td>${customerName}</td>
+                <td>${lcsm}</td>
+                <td>€${arr.toLocaleString()}</td>
+                <td>${risk.toFixed(1)}</td>
+                <td>
+                    <div class="risk-bar-container">
+                        <div class="risk-bar-bg">
+                            <div class="risk-bar-fill" style="width: ${riskBarWidth}; background: ${riskColor};"></div>
+                        </div>
+                        <span class="risk-badge" style="background: ${riskColor}; color: #000;">${riskBadge}</span>
+                    </div>
+                </td>
+                <td>${actionButton}</td>
+            </tr>
+        `;
+    });
+    
+    tableHTML += '</tbody></table>';
+    return tableHTML;
+}
+
+window.removeFromArchiveSlider = function(index) {
+    try {
+        if (index >= 0 && index < erledigtRows.length) {
+            const removedRow = erledigtRows.splice(index, 1)[0];
+            
+            const customerName = removedRow['Customer Name'] || removedRow['Kunde'] || removedRow['Kundenname'] || removedRow['Customer'] || removedRow['Name'] || 'Unknown Customer';
+            
+            const customerKey = DataUtils.generateCustomerKey(removedRow);
+            
+            const filteredIndex = DataUtils.findCustomerInArray(filteredData, removedRow);
+            
+            if (filteredIndex !== -1) {
+                filteredData[filteredIndex].erledigt = false;
+                filteredData[filteredIndex].done = false;
+                filteredData[filteredIndex].archived = false;
+                console.log(`Customer ${customerName} marked as active again in filteredData`);
+            }
+            
+            const aggregatedIndex = DataUtils.findCustomerInArray(aggregatedData, removedRow);
+            if (aggregatedIndex !== -1) {
+                aggregatedData[aggregatedIndex].erledigt = false;
+                aggregatedData[aggregatedIndex].done = false;
+                aggregatedData[aggregatedIndex].archived = false;
+                console.log(`Customer ${customerName} marked as active again in aggregatedData`);
+            }
+            
+            updateSliderData();
+            renderTable(DataUtils.getActiveCustomers(filteredData));
+            saveSession();
+            
+            DebugLogger.add('info', `Customer removed from archive: ${customerName}`);
+        }
+    } catch (error) {
+        console.error('Error in removeFromArchiveSlider:', error);
+        DebugLogger.add('error', 'Error in removeFromArchiveSlider', error);
+    }
+};
+
+window.sortSlider = function(column) {
+    if (currentSliderSort.column === column) {
+        currentSliderSort.direction = currentSliderSort.direction === 'asc' ? 'desc' : 'asc';
+    } else {
+        currentSliderSort.column = column;
+        currentSliderSort.direction = 'desc';
+    }
+    
+    updateSliderData();
+    console.log(`Slider sorted by ${column} ${currentSliderSort.direction}`);
+};
+
+// KORRIGIERT: File Upload mit RICHTIGEN XLSX-Optionen - DAS IST DER ECHTE FIX!
+function handleFile(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(event) {
+        try {
+            console.log('=== APP: File Upload Started ===');
+            
+            const data = new Uint8Array(event.target.result);
+            
+            // KORRIGIERT: Einfache XLSX-Optionen - HIER WAR DER FEHLER!
+            const workbook = XLSX.read(data, { 
+                type: 'array'
+                // ALLE anderen Optionen ENTFERNT!
+            });
+            
+            const sheet = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[sheet];
+            
+            // KORRIGIERT: Bessere JSON-Optionen - HIER WAR DER FEHLER!
+            const json = XLSX.utils.sheet_to_json(worksheet, { 
+                header: 1,
+                raw: false,           // <-- ÄNDERUNG: false statt true
+                defval: '',           // <-- ÄNDERUNG: '' statt null
+                blankrows: false      // <-- NEU
+            });
+
+            headers = json[0].filter(header => header && header.toString().trim() !== '');
+            console.log('APP: Original headers found:', headers);
+            
+            let rawData = json.slice(1).map((row, rowIndex) => {
+                let obj = {};
+                headers.forEach((header, i) => {
+                    if (header && header.trim()) {
+                        obj[header] = row[i];
+                    }
+                });
+                return obj;
+            }).filter(row => {
+                return Object.values(row).some(value => 
+                    value !== undefined && 
+                    value !== null && 
+                    value !== '' && 
+                    value.toString().trim() !== ''
+                );
+            });
+
+            console.log(`APP: Raw data extracted: ${rawData.length} rows`);
+            
+            const extractedData = extractCustomerData(rawData, headers);
+            console.log(`APP: Extracted data: ${extractedData.length} customers`);
+            
+            if (extractedData.length > 0) {
+                console.log('APP: Sample extracted customer:', extractedData[0]);
+                console.log('APP: ARR values in first 5 customers:', extractedData.slice(0, 5).map(c => ({
+                    name: c['Customer Name'],
+                    arr: c.ARR,
+                    risk: c['Total Risk']
+                })));
+            }
+            
+            excelData = extractedData;
+            aggregatedData = extractedData;
+            originalAggregatedData = [...extractedData];
+            
+            filteredData = DataUtils.mergeSessionWithData(erledigtRows, extractedData);
+            selectedLCSM = 'ALL';
+            
+            console.log('APP: Final data prepared:', {
+                excelData: excelData.length,
+                aggregatedData: aggregatedData.length,
+                filteredData: filteredData.length
+            });
+            
+            renderTable(DataUtils.getActiveCustomers(filteredData));
+            renderSortControls();
+            updateTableVisibility();
+            
+            const archiveBar = document.getElementById('archiveUploadBar');
+            if (archiveBar) {
+                archiveBar.style.display = 'none';
+            }
+            archiveMode = false;
+            
+            if (sliderOpen) {
+                updateSliderData();
+            }
+            
+            saveSession();
+            
+            console.log('=== APP: File Upload SUCCESS ===');
+            alert(`File uploaded successfully: ${extractedData.length} customers processed with corrected XLSX options`);
+            
+        } catch (error) {
+            console.error('APP: Processing error:', error);
+            alert(`File processing failed: ${error.message}`);
+        }
+    };
+
+    reader.readAsArrayBuffer(file);
+}
 
 function renderSortControls() {
-  const stickySort = document.getElementById('stickySort');
-  const sortableColumns = displayColumns.filter(col => col !== 'Actions');
-  if (!sortableColumns || sortableColumns.length === 0) return;
-  
-  stickySort.innerHTML = `
-    <div class="sort-controls">
-      <label for="sortSelect">Sort by:</label>
-      <select id="sortSelect" class="sort-select">
-        ${sortableColumns.map(column => `<option value="${column}">${column}</option>`).join('')}
-      </select>
-      <button class="sort-btn" id="sortBtn" onclick="toggleSort()">↓</button>
-    </div>
-  `;
+    const stickySort = document.getElementById('stickySort');
+    if (!stickySort) return;
+    
+    stickySort.innerHTML = `
+        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+            <span style="color: #ffd221; font-weight: bold;">Sort by:</span>
+            ${displayColumns.filter(col => col !== 'Actions').map(col => `
+                <button onclick="sortTable('${col}')" style="
+                    padding: 8px 16px; background: rgba(255,210,33,0.1);
+                    border: 1px solid #ffd221; color: #ffd221; border-radius: 8px;
+                    cursor: pointer; transition: all 0.3s;
+                " onmouseover="this.style.background='rgba(255,210,33,0.2)'"
+                   onmouseout="this.style.background='rgba(255,210,33,0.1)'">
+                    ${col} ${currentSort.column === col ? (currentSort.direction === 'asc' ? '↑' : '↓') : ''}
+                </button>
+            `).join('')}
+        </div>
+    `;
 }
 
-// KORRIGIERTE renderTable Funktion - mit Done Button und korrekter Customer Name Auslesung
-function renderTable(data) {
-  const tableContainer = document.getElementById('tableContainer');
-  const dataTable = document.getElementById('dataTable');
-  
-  if (!data || data.length === 0) {
-    tableContainer.style.display = 'none';
-    return;
-  }
-  
-  // Fill table with desired columns + Done button
-  let tableHTML = '<thead><tr>';
-  displayColumns.forEach(column => {
-    tableHTML += `<th>${column}</th>`;
-  });
-  tableHTML += '</tr></thead><tbody>';
-  
-  data.forEach((row, index) => {
-    tableHTML += '<tr>';
-    displayColumns.forEach(column => {
-      if (column === 'Actions') {
-        tableHTML += `<td><button class="complete-btn" onclick="markAsDone(${index})">Done</button></td>`;
-      } else {
-        let value = '';
-        
-        // KORRIGIERTE Customer Name Auslesung
-        if (column === 'Customer Name') {
-          value = row["Customer Name"] || row["Customer"] || row["Name"] || row["Client Name"] || row["Company"] || '';
-        } else {
-          value = row[column] || '';
+function sortTable(column) {
+    if (currentSort.column === column) {
+        currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+    } else {
+        currentSort.column = column;
+        currentSort.direction = 'desc';
+    }
+
+    const dataToSort = archiveMode ? erledigtRows : DataUtils.getActiveCustomers(filteredData);
+    
+    dataToSort.sort((a, b) => {
+        let aVal = a[column];
+        let bVal = b[column];
+
+        if (column === 'ARR' || column === 'Total Risk') {
+            aVal = parseFloat(aVal) || 0;
+            bVal = parseFloat(bVal) || 0;
         }
-        
-        // Formatting for ARR and Total Risk (numbers)
-        if ((column === 'ARR' || column === 'Total Risk') && value !== '') {
-          const numValue = parseFloat(value);
-          tableHTML += `<td>${isNaN(numValue) ? value : numValue.toLocaleString()}</td>`;
+
+        if (currentSort.direction === 'asc') {
+            return aVal > bVal ? 1 : -1;
         } else {
-          tableHTML += `<td>${value}</td>`;
+            return aVal < bVal ? 1 : -1;
         }
-      }
     });
-    tableHTML += '</tr>';
-  });
-  
-  tableHTML += '</tbody>';
-  dataTable.innerHTML = tableHTML;
-  
-  // Show table
-  tableContainer.style.display = 'flex';
-  tableContainer.style.visibility = 'visible';
-  tableContainer.style.opacity = '1';
+
+    renderTable(dataToSort);
+    renderSortControls();
+    saveSession();
 }
 
-// Done Button Funktionalität
+function renderTable(data) {
+    const tableContainer = document.getElementById('tableContainer');
+    const dataTable = document.getElementById('dataTable');
+
+    if (!tableContainer || !dataTable) return;
+    
+    if (!data || data.length === 0) {
+        tableContainer.style.display = 'none';
+        return;
+    }
+
+    let tableHTML = '<thead><tr>';
+    displayColumns.forEach(col => {
+        tableHTML += `<th>${col}</th>`;
+    });
+    tableHTML += '</tr></thead><tbody>';
+
+    const processedCustomers = new Set();
+
+    data.forEach((row, index) => {
+        const customerKey = DataUtils.generateCustomerKey(row);
+        
+        if (processedCustomers.has(customerKey)) {
+            console.log(`Skipping duplicate customer: ${customerKey}`);
+            return;
+        }
+        processedCustomers.add(customerKey);
+        
+        const isErledigt = row.erledigt || row.done || row.archived || false;
+        
+        if (!archiveMode && isErledigt) {
+            console.log(`Skipping archived customer in ShowData: ${customerKey}`);
+            return;
+        }
+        
+        if (archiveMode && !isErledigt) {
+            console.log(`Skipping active customer in Archive: ${customerKey}`);
+            return;
+        }
+        
+        tableHTML += `<tr>`;
+        
+        displayColumns.forEach(col => {
+            if (col === 'Actions') {
+                if (archiveMode) {
+                    tableHTML += `<td>
+                        <button onclick="removeFromArchive(${index})" style="
+                            padding: 6px 12px; background: #f44336; color: white;
+                            border: none; border-radius: 6px; cursor: pointer;
+                        ">Remove</button>
+                    </td>`;
+                } else {
+                    tableHTML += `<td>
+                        <button onclick="markAsDone(${index})" style="
+                            padding: 6px 12px; background: #4CAF50; 
+                            color: white; border: none; border-radius: 6px; cursor: pointer;
+                        ">Mark Done</button>
+                    </td>`;
+                }
+            } else if (col === 'ARR') {
+                const arr = parseFloat(row[col]) || 0;
+                tableHTML += `<td>€${arr.toLocaleString()}</td>`;
+            } else if (col === 'Customer Name') {
+                const customerName = row['Customer Name'] || row['Kunde'] || row['Kundenname'] || row['Customer'] || row['Name'] || 'Unknown';
+                tableHTML += `<td>${customerName}</td>`;
+            } else {
+                tableHTML += `<td>${row[col] || ''}</td>`;
+            }
+        });
+        tableHTML += '</tr>';
+    });
+
+    tableHTML += '</tbody>';
+    dataTable.innerHTML = tableHTML;
+    tableContainer.style.display = 'block';
+    
+    console.log(`Rendered table with ${processedCustomers.size} unique customers (${data.length} total rows)`);
+}
+
 window.markAsDone = function(index) {
-  if (confirm('Mark this entry as done?')) {
-    const completedRow = filteredData[index];
-    erledigtRows.push(completedRow);
-    filteredData.splice(index, 1);
-    renderTable(filteredData);
-    updateTableVisibility();
-  }
+    try {
+        const activeCustomers = DataUtils.getActiveCustomers(filteredData);
+        
+        if (index < 0 || index >= activeCustomers.length) {
+            return;
+        }
+        
+        const row = activeCustomers[index];
+        if (!row || row.erledigt) {
+            return;
+        }
+        
+        const customerName = row['Customer Name'] || row['Kunde'] || row['Kundenname'] || row['Customer'] || row['Name'] || 'Unknown Customer';
+        
+        const customerKey = DataUtils.generateCustomerKey(row);
+        const alreadyInArchive = erledigtRows.find(archived => 
+            DataUtils.generateCustomerKey(archived) === customerKey
+        );
+        
+        if (alreadyInArchive) {
+            console.log(`Customer ${customerName} already in archive - skipping`);
+            return;
+        }
+        
+        const originalIndex = DataUtils.findCustomerInArray(filteredData, row);
+        
+        if (originalIndex !== -1) {
+            filteredData[originalIndex].erledigt = true;
+            filteredData[originalIndex].done = true;
+            filteredData[originalIndex].archived = true;
+            filteredData[originalIndex].archivedAt = new Date().toISOString();
+            erledigtRows.push({...filteredData[originalIndex]});
+            console.log(`Customer ${customerName} moved to archive`);
+        }
+        
+        const aggregatedIndex = DataUtils.findCustomerInArray(aggregatedData, row);
+        if (aggregatedIndex !== -1) {
+            aggregatedData[aggregatedIndex].erledigt = true;
+            aggregatedData[aggregatedIndex].done = true;
+            aggregatedData[aggregatedIndex].archived = true;
+            aggregatedData[aggregatedIndex].archivedAt = new Date().toISOString();
+        }
+        
+        setTimeout(() => {
+            renderTable(DataUtils.getActiveCustomers(filteredData));
+            
+            if (sliderOpen) {
+                updateSliderData();
+            }
+            
+            saveSession();
+        }, 0);
+        
+        DebugLogger.add('info', `Customer marked as done: ${customerName}`);
+        
+    } catch (error) {
+        console.error('Error in markAsDone:', error);
+        DebugLogger.add('error', 'Error in markAsDone', error);
+    }
+};
+
+window.removeFromArchive = function(index) {
+    try {
+        if (index >= 0 && index < erledigtRows.length) {
+            const removedRow = erledigtRows.splice(index, 1)[0];
+            
+            const customerName = removedRow['Customer Name'] || removedRow['Kunde'] || removedRow['Kundenname'] || removedRow['Customer'] || removedRow['Name'] || 'Unknown Customer';
+            
+            const filteredIndex = DataUtils.findCustomerInArray(filteredData, removedRow);
+            
+            if (filteredIndex !== -1) {
+                filteredData[filteredIndex].erledigt = false;
+                filteredData[filteredIndex].done = false;
+                filteredData[filteredIndex].archived = false;
+                console.log(`Customer ${customerName} marked as active again`);
+            }
+            
+            const aggregatedIndex = DataUtils.findCustomerInArray(aggregatedData, removedRow);
+            if (aggregatedIndex !== -1) {
+                aggregatedData[aggregatedIndex].erledigt = false;
+                aggregatedData[aggregatedIndex].done = false;
+                aggregatedData[aggregatedIndex].archived = false;
+            }
+            
+            renderTable(erledigtRows);
+            
+            if (sliderOpen) {
+                updateSliderData();
+            }
+            
+            saveSession();
+            
+            DebugLogger.add('info', `Customer removed from archive: ${customerName}`);
+        }
+    } catch (error) {
+        console.error('Error in removeFromArchive:', error);
+        DebugLogger.add('error', 'Error in removeFromArchive', error);
+    }
 };
 
 function updateTableVisibility() {
-  const tableContainer = document.getElementById('tableContainer');
-  if (filteredData && filteredData.length > 0) {
-    tableContainer.style.display = 'flex';
-    tableContainer.style.visibility = 'visible';
-    tableContainer.style.opacity = '1';
-  } else {
-    tableContainer.style.display = 'none';
-  }
+    const tableContainer = document.getElementById('tableContainer');
+    if (!tableContainer) return;
+    
+    const hasData = (archiveMode ? erledigtRows : DataUtils.getActiveCustomers(filteredData)).length > 0;
+    tableContainer.style.display = hasData ? 'block' : 'none';
 }
 
-function toggleSort() {
-  const sortSelect = document.getElementById('sortSelect');
-  const sortBtn = document.getElementById('sortBtn');
-  const column = sortSelect.value;
-  
-  if (currentSort.column === column) {
-    currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
-  } else {
-    currentSort.column = column;
-    currentSort.direction = 'desc';
-  }
-  
-  sortBtn.textContent = currentSort.direction === 'asc' ? '↑' : '↓';
-  
-  filteredData.sort((a, b) => {
-    let aVal = a[column] || 0;
-    let bVal = b[column] || 0;
+function checkUrlParameters() {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('openArchive') === 'true') {
+        console.log('URL parameter detected - opening archive automatically');
+        setTimeout(() => {
+            window.showArchive();
+        }, 500);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM Content Loaded - Setting up event listeners...');
     
-    // Numeric sorting for ARR and Total Risk
-    if (column === 'ARR' || column === 'Total Risk') {
-      aVal = parseFloat(aVal) || 0;
-      bVal = parseFloat(bVal) || 0;
+    let attempts = 0;
+    const maxAttempts = 20;
+    
+    function forceButtonClick(buttonId, callback) {
+        const button = document.getElementById(buttonId);
+        if (button) {
+            button.onclick = function(e) {
+                if (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+                console.log(`${buttonId} clicked via onclick`);
+                callback();
+                return false;
+            };
+            
+            button.addEventListener('click', function(e) {
+                if (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+                console.log(`${buttonId} clicked via addEventListener`);
+                callback();
+                return false;
+            }, false);
+            
+            button.onmousedown = function(e) {
+                if (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+                console.log(`${buttonId} mousedown`);
+                setTimeout(callback, 10);
+                return false;
+            };
+            
+            button.ontouchstart = function(e) {
+                if (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+                console.log(`${buttonId} touchstart`);
+                setTimeout(callback, 10);
+                return false;
+            };
+            
+            console.log(`${buttonId} listeners added (4 methods)`);
+            return true;
+        }
+        return false;
     }
     
-    if (currentSort.direction === 'asc') {
-      return aVal > bVal ? 1 : -1;
-    } else {
-      return aVal < bVal ? 1 : -1;
+    function setupEventListeners() {
+        attempts++;
+        console.log(`Setting up event listeners - attempt ${attempts}`);
+        
+        try {
+            const sessionRestored = restoreSession();
+            
+            const fileInput = document.getElementById('fileInput');
+            if (fileInput) {
+                fileInput.addEventListener('change', handleFile, false);
+                console.log('File input listener added');
+            }
+
+            const uploadDataBtn = document.getElementById('uploadDataBtn');
+            if (uploadDataBtn) {
+                uploadDataBtn.onclick = window.triggerUpload;
+                console.log('Upload Data button listener added');
+            }
+
+            const startBtn = document.getElementById('startBtn');
+            if (startBtn) {
+                startBtn.onclick = window.goToStart;
+                console.log('ShowData button listener added');
+            }
+            
+            const logoutSuccess = forceButtonClick('logoutBtn', window.performLogout);
+            if (!logoutSuccess) {
+                console.error('Logout button not found!');
+            }
+
+            const heatmapSuccess = forceButtonClick('heatmapBtn', window.openHeatmap);
+            if (!heatmapSuccess) {
+                console.error('RiskMap button not found!');
+            }
+            
+            const archiveSuccess = forceButtonClick('archiveBtn', window.showArchive);
+            if (!archiveSuccess) {
+                console.error('Archive button not found!');
+            }
+
+            const closeSliderBtn = document.getElementById('closeSliderBtn');
+            if (closeSliderBtn) {
+                closeSliderBtn.onclick = function() {
+                    console.log('Close slider button clicked');
+                    closeSlider();
+                };
+                console.log('Close slider button listener added');
+            }
+
+            const dialogBg = document.getElementById('dialogBg');
+            if (dialogBg) {
+                dialogBg.addEventListener('click', function(e){
+                    if(e.target === this) this.style.display = 'none';
+                });
+                console.log('Dialog background listener added');
+            }
+
+            updateTableVisibility();
+            AutoSave.start(saveSession);
+            
+            checkUrlParameters();
+            
+            if (!sessionRestored) {
+                DebugLogger.add('info', 'App started - no previous session');
+            } else {
+                DebugLogger.add('info', 'App started - session restored');
+            }
+            
+            console.log('All event listeners set up successfully!');
+            return true;
+            
+        } catch (error) {
+            console.error('Error setting up event listeners:', error);
+            return false;
+        }
     }
-  });
-  
-  renderTable(filteredData);
-}
+    
+    function trySetupEventListeners() {
+        if (setupEventListeners()) {
+            return;
+        }
+        
+        if (attempts < maxAttempts) {
+            const delays = [10, 25, 50, 100, 150, 200, 300, 500, 750, 1000];
+            const delay = delays[attempts % delays.length];
+            setTimeout(trySetupEventListeners, delay);
+        } else {
+            console.error('Failed to set up event listeners after maximum attempts');
+            window.addEventListener('load', function() {
+                console.log('Final attempt: Trying to setup event listeners after window load');
+                setupEventListeners();
+            });
+        }
+    }
+    
+    trySetupEventListeners();
+});
 
-function handleClearData() {
-  if (confirm('Delete all data?')) {
-    excelData = [];
-    filteredData = [];
-    erledigtRows = [];
-    headers = [];
-    selectedLCSM = null;
-    document.getElementById('tableContainer').style.display = 'none';
-    document.getElementById('stickySort').innerHTML = '';
-  }
-}
-
-function mergeSessionWithData(erledigtRows, excelData) {
-  return excelData;
-}
+window.aggregatedData = aggregatedData;
