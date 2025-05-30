@@ -1,0 +1,1357 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>No more Risk! - RiskMap</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="utils.js"></script>
+</head>
+<body>
+    <!-- Background Video -->
+    <div class="background-video-container">
+        <video id="background-video" autoplay muted loop playsinline>
+            <source src="background.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
+        <div class="background-blur-overlay"></div>
+    </div>
+
+    <!-- App Foreground -->
+    <div class="app-foreground">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <nav class="sidebar-nav">
+                <ul>
+                    <li><button class="sidebar-btn" onclick="window.goToStart()">ShowData</button></li>
+                    <li><button class="sidebar-btn" onclick="window.triggerUpload()">Upload Data</button></li>
+                    <li><button class="sidebar-btn active-page">📊 RiskMap</button></li>
+                    <li><button class="sidebar-btn" onclick="window.showArchive()">📋 Archive</button></li>
+                </ul>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <button class="sidebar-btn logout-btn" onclick="window.performLogout()">
+                    Logout & Clear Session
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content slider-open" id="mainContent">
+            <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" style="display: none;">
+        </div>
+
+        <!-- RiskMap Slider Panel -->
+        <div id="sliderPanel" class="slider-panel active">
+            <div class="slider-header">
+                <h2 id="sliderTitle">RISKMAP</h2>
+                <button onclick="window.location.href='app.html'" class="close-slider-btn">×</button>
+            </div>
+            
+            <div class="slider-content" id="sliderContent">
+                <!-- Filter mit korrekten Pfeilen -->
+                <div class="slider-filters-static">
+                    <h3>Sort Data</h3>
+                    <div class="filter-buttons">
+                        <button class="sort-btn" id="sortARR">
+                            <span class="sort-text">ARR</span>
+                            <span class="sort-arrow">↓</span>
+                        </button>
+                        <button class="sort-btn active" id="sortRisk">
+                            <span class="sort-text">Total Risk</span>
+                            <span class="sort-arrow">↓</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Statistics -->
+                <div class="slider-stats-static">
+                    <div class="stat-item">
+                        <span class="stat-label">Total Customers</span>
+                        <span class="stat-value" id="totalCustomers">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">High Risk Customers</span>
+                        <span class="stat-value" id="highRiskCustomers">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Total ARR</span>
+                        <span class="stat-value" id="totalARR">€0</span>
+                    </div>
+                </div>
+
+                <!-- Tabelle -->
+                <div class="slider-table-section">
+                    <h3>Customer Data</h3>
+                    <div class="slider-table-scrollable">
+                        <table class="slider-data-table" id="riskmapTable">
+                            <thead>
+                                <tr>
+                                    <th>Customer Name</th>
+                                    <th>LCSM</th>
+                                    <th>ARR</th>
+                                    <th>Total Risk</th>
+                                    <th>Risk Level</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="riskmapTableBody">
+                                <tr>
+                                    <td colspan="6" style="text-align: center; padding: 30px; color: #ccc;">
+                                        Loading data...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer-transparent" id="footerTransparent">
+        <div class="footer-content-transparent">
+            <a href="https://github.com/Olivetr33/No-More-Risk-" target="_blank" rel="noopener" class="github-link">GitHub</a>
+        </div>
+    </div>
+
+    <!-- Styles -->
+    <style>
+        html, body {
+            overflow-x: hidden !important;
+            max-width: 100vw !important;
+            box-sizing: border-box;
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: -20px;
+            width: 270px;
+            height: 100vh;
+            background: rgba(30, 30, 30, 0.95);
+            backdrop-filter: blur(10px);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 0 25px 25px 0;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            padding: 20px 20px 20px 40px;
+            box-shadow: 
+                5px 0 25px rgba(0, 0, 0, 0.3),
+                0 0 30px rgba(255, 210, 33, 0.1);
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            padding: 0;
+        }
+
+        .sidebar-nav ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sidebar-nav li {
+            margin-bottom: 15px;
+        }
+
+        .sidebar-footer {
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: auto;
+        }
+
+        .sidebar-btn {
+            width: 100%;
+            min-height: 65px;
+            padding: 20px 25px;
+            background: rgba(255, 255, 255, 0.05);
+            border: none;
+            color: #ffffff;
+            border-radius: 0 25px 25px 0;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+            font-size: 16px;
+            font-weight: 600;
+            text-align: center;
+            display: block;
+            position: relative;
+            transform: translateX(-10px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            outline: none;
+            overflow: visible;
+            z-index: 10;
+        }
+
+        .sidebar-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(255, 210, 33, 0.1), rgba(255, 255, 255, 0.05));
+            border-radius: 0 25px 25px 0;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .sidebar-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateX(15px);
+            box-shadow: 
+                0 8px 25px rgba(255, 210, 33, 0.3),
+                0 0 20px rgba(255, 210, 33, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar-btn:hover::before {
+            opacity: 1;
+        }
+
+        .sidebar-btn:active {
+            transform: translateX(8px);
+        }
+
+        .sidebar-btn:focus {
+            outline: 2px solid #ffd221;
+            outline-offset: 2px;
+        }
+
+        .active-page {
+            background: rgba(255, 210, 33, 0.2) !important;
+            border: 2px solid #ffd221 !important;
+            color: #ffd221 !important;
+            cursor: default !important;
+        }
+
+        .active-page:hover {
+            transform: translateX(-10px) !important;
+        }
+
+        .logout-btn {
+            background: rgba(244, 67, 54, 0.1) !important;
+            border: 2px solid #f44336 !important;
+            color: #f44336 !important;
+            position: relative !important;
+            z-index: 100 !important;
+        }
+
+        .logout-btn::after {
+            content: '';
+            position: absolute;
+            top: -10px;
+            bottom: -10px;
+            left: -10px;
+            right: -10px;
+            z-index: -1;
+            cursor: pointer;
+        }
+
+        .logout-btn:hover {
+            background: rgba(244, 67, 54, 0.2) !important;
+            border-color: #ff5722 !important;
+            color: #ff5722 !important;
+        }
+
+        .logout-btn::before {
+            background: linear-gradient(135deg, rgba(244, 67, 54, 0.1), rgba(255, 87, 34, 0.05)) !important;
+        }
+
+        .main-content {
+            margin-left: 250px;
+            padding: 20px;
+            padding-bottom: 120px;
+            transition: all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+            overflow-x: hidden !important;
+            width: calc(100vw - 250px);
+            min-height: calc(100vh - 120px);
+        }
+
+        .main-content.slider-open {
+            width: calc(100vw - 250px - 80px);
+            margin-right: 80px;
+        }
+
+        .slider-panel {
+            position: fixed;
+            top: 0;
+            right: -100vw;
+            width: calc(100vw - 250px);
+            height: 100vh;
+            background: rgba(10, 10, 10, 0.98);
+            backdrop-filter: blur(25px);
+            z-index: 2000;
+            transition: right 0.6s cubic-bezier(0.25, 0.8, 0.25, 1);
+            overflow: hidden;
+            color: #ffffff;
+            box-shadow: -30px 0 60px rgba(0, 0, 0, 0.8);
+            border-radius: 25px 0 0 25px;
+        }
+
+        .slider-panel.active {
+            right: 0;
+            border-left: 4px solid transparent;
+            border-image: linear-gradient(
+                to bottom,
+                transparent 0%,
+                transparent 15%,
+                rgba(255, 210, 33, 0.3) 20%,
+                rgba(255, 210, 33, 0.8) 40%,
+                #ffd221 50%,
+                rgba(255, 210, 33, 0.8) 60%,
+                rgba(255, 210, 33, 0.3) 80%,
+                transparent 85%,
+                transparent 100%
+            ) 1;
+            box-shadow: 
+                -30px 0 60px rgba(0, 0, 0, 0.8),
+                0 0 40px rgba(255, 210, 33, 0.6),
+                inset 0 0 40px rgba(255, 210, 33, 0.15);
+            animation: neonPulse 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes neonPulse {
+            0% {
+                box-shadow: 
+                    -30px 0 60px rgba(0, 0, 0, 0.8),
+                    0 0 30px rgba(255, 210, 33, 0.5),
+                    inset 0 0 30px rgba(255, 210, 33, 0.1);
+            }
+            100% {
+                box-shadow: 
+                    -30px 0 60px rgba(0, 0, 0, 0.8),
+                    0 0 60px rgba(255, 210, 33, 0.9),
+                    inset 0 0 60px rgba(255, 210, 33, 0.25);
+            }
+        }
+
+        .slider-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 35px;
+            border-bottom: 3px solid rgba(255, 210, 33, 0.4);
+            background: linear-gradient(135deg, rgba(255, 210, 33, 0.15), rgba(255, 180, 0, 0.08));
+            border-radius: 25px 0 0 0;
+            position: sticky;
+            top: 0;
+            z-index: 15;
+        }
+
+        .slider-header h2 {
+            color: #ffd221;
+            margin: 0;
+            font-size: 36px;
+            font-weight: bold;
+            text-shadow: 0 0 20px rgba(255, 210, 33, 0.6);
+        }
+
+        .close-slider-btn {
+            background: none;
+            border: none;
+            color: #ffffff;
+            font-size: 36px;
+            cursor: pointer;
+            padding: 12px 18px;
+            border-radius: 50%;
+            transition: all 0.4s ease;
+        }
+
+        .close-slider-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: rotate(90deg);
+            color: #ffd221;
+            box-shadow: 0 0 20px rgba(255, 210, 33, 0.5);
+        }
+
+        .slider-content {
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 120px);
+            overflow: hidden;
+        }
+
+        .slider-filters-static {
+            position: sticky;
+            top: 0;
+            z-index: 14;
+            background: rgba(10, 10, 10, 0.98);
+            padding: 25px 35px;
+            border-bottom: 2px solid rgba(255, 210, 33, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        .slider-filters-static h3 {
+            color: #ffd221;
+            margin: 0 0 20px 0;
+            font-size: 20px;
+            text-shadow: 0 0 10px rgba(255, 210, 33, 0.5);
+        }
+
+        .filter-buttons {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .sort-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 15px 25px;
+            background: rgba(255, 210, 33, 0.1);
+            border: 2px solid #ffd221;
+            color: #ffd221;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 16px;
+            font-weight: 600;
+            min-width: 120px;
+        }
+
+        .sort-btn:hover {
+            background: rgba(255, 210, 33, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(255, 210, 33, 0.3);
+        }
+
+        .sort-btn.active {
+            background: rgba(255, 210, 33, 0.3);
+            border-color: #ffb800;
+            color: #ffb800;
+            box-shadow: 0 0 15px rgba(255, 210, 33, 0.5);
+        }
+
+        .sort-text {
+            font-weight: 600;
+            font-size: 16px;
+            line-height: 1;
+        }
+
+        .sort-arrow {
+            font-size: 18px;
+            line-height: 1;
+            display: flex;
+            align-items: center;
+            font-weight: bold;
+        }
+
+        .slider-stats-static {
+            position: sticky;
+            top: 0;
+            z-index: 13;
+            background: rgba(10, 10, 10, 0.98);
+            padding: 20px 35px;
+            border-bottom: 2px solid rgba(255, 210, 33, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .stat-item:last-child {
+            border-bottom: none;
+        }
+
+        .stat-label {
+            color: #cccccc;
+            font-size: 16px;
+        }
+
+        .stat-value {
+            color: #ffd221;
+            font-weight: bold;
+            font-size: 20px;
+            text-shadow: 0 0 10px rgba(255, 210, 33, 0.5);
+        }
+
+        .slider-table-section {
+            flex: 1;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            padding: 0 35px;
+        }
+
+        .slider-table-section h3 {
+            color: #ffd221;
+            margin: 20px 0;
+            font-size: 22px;
+            text-shadow: 0 0 10px rgba(255, 210, 33, 0.5);
+        }
+
+        .slider-table-scrollable {
+            flex: 1;
+            overflow-y: auto;
+            border: 2px solid rgba(255, 210, 33, 0.3);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.02);
+            margin-bottom: 100px;
+            position: relative;
+        }
+
+        .slider-table-scrollable::before {
+            content: '';
+            position: sticky;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: linear-gradient(
+                to bottom,
+                rgba(10, 10, 10, 0.98) 0%,
+                rgba(10, 10, 10, 0.95) 20%,
+                rgba(10, 10, 10, 0.8) 40%,
+                rgba(10, 10, 10, 0.6) 60%,
+                rgba(10, 10, 10, 0.3) 80%,
+                transparent 100%
+            );
+            z-index: 11;
+            pointer-events: none;
+            backdrop-filter: blur(8px);
+        }
+
+        .slider-data-table {
+            width: 100%;
+            border-collapse: collapse;
+            color: #ffffff;
+        }
+
+        .slider-data-table thead {
+            background: rgba(255, 210, 33, 0.15);
+            position: sticky;
+            top: 0;
+            z-index: 12;
+            backdrop-filter: blur(15px);
+        }
+
+        .slider-data-table th {
+            padding: 15px 12px;
+            text-align: left;
+            color: #ffd221;
+            font-weight: bold;
+            border-bottom: 2px solid rgba(255, 210, 33, 0.3);
+            font-size: 14px;
+            background: rgba(10, 10, 10, 0.95);
+        }
+
+        .slider-data-table td {
+            padding: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 13px;
+        }
+
+        .slider-data-table tbody tr:hover {
+            background: rgba(255, 210, 33, 0.1);
+        }
+
+        .risk-bar-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .risk-bar-bg {
+            width: 80px;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .risk-bar-fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            background: linear-gradient(90deg, currentColor 0%, rgba(255, 255, 255, 0.3) 100%);
+        }
+
+        .risk-badge {
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .footer-transparent {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: transparent;
+            z-index: 3000;
+            padding: 20px 0;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+
+        .footer-content-transparent {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 30px;
+        }
+
+        .github-link {
+            color: #ffffff;
+            text-decoration: none;
+            font-weight: 500;
+            padding: 12px 24px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 25px;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .github-link:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.6);
+            transform: translateY(-2px);
+        }
+    </style>
+
+    <!-- KORRIGIERTES JavaScript - Mit IDENTISCHER extractNumber() Funktion wie in app.js -->
+    <script>
+        // KORRIGIERT: IDENTISCHE Spalten-Mapping wie in app.js
+        const COLUMN_MAPPINGS = {
+            'LCSM': ['LCSM', 'lcsm', 'Lcsm', 'LcsM', 'SACHBEARBEITER', 'sachbearbeiter', 'Sachbearbeiter', 'CSM', 'csm', 'Manager', 'manager', 'MANAGER', 'Betreuer', 'betreuer', 'BETREUER'],
+            'Customer Name': ['Customer Name', 'customer name', 'CUSTOMER NAME', 'CustomerName', 'customername', 'CUSTOMERNAME', 'Customer Number', 'customer number', 'CUSTOMER NUMBER', 'CustomerNumber', 'customernumber', 'CUSTOMERNUMBER', 'Kunde', 'kunde', 'KUNDE', 'Kundenname', 'kundenname', 'KUNDENNAME', 'Kundennummer', 'kundennummer', 'KUNDENNUMMER', 'Name', 'name', 'NAME', 'Client', 'client', 'CLIENT'],
+            'Total Risk': ['Total Risk', 'total risk', 'TOTAL RISK', 'TotalRisk', 'totalrisk', 'TOTALRISK', 'Risk', 'risk', 'RISK', 'Risiko', 'risiko', 'RISIKO', 'Score', 'score', 'SCORE', 'Risk Score', 'risk score', 'RISK SCORE', 'RiskScore', 'riskscore', 'RISKSCORE'],
+            'ARR': ['ARR', 'arr', 'Arr', 'Annual Recurring Revenue', 'annual recurring revenue', 'ANNUAL RECURRING REVENUE', 'Revenue', 'revenue', 'REVENUE', 'Umsatz', 'umsatz', 'UMSATZ', 'Vertragswert', 'vertragswert', 'VERTRAGSWERT', 'Value', 'value', 'VALUE', 'Wert', 'wert', 'WERT', 'Amount', 'amount', 'AMOUNT']
+        };
+
+        // KORRIGIERT: IDENTISCHE Spaltenerkennung wie in app.js
+        function findColumnName(headers, targetColumn) {
+            const possibleNames = COLUMN_MAPPINGS[targetColumn] || [targetColumn];
+            
+            for (const header of headers) {
+                for (const possibleName of possibleNames) {
+                    if (header.toLowerCase().trim() === possibleName.toLowerCase().trim()) {
+                        console.log(`RISKMAP: Found column mapping: "${header}" -> "${targetColumn}"`);
+                        return header;
+                    }
+                }
+            }
+            
+            console.warn(`RISKMAP: Column not found for ${targetColumn}. Available headers:`, headers);
+            return null;
+        }
+
+        // KORRIGIERT: IDENTISCHE ultra-robuste Zahlenextraktion wie in app.js
+        function extractNumber(value) {
+            console.log(`RISKMAP: Processing value: "${value}" (type: ${typeof value})`);
+            
+            if (typeof value === 'number' && !isNaN(value)) {
+                console.log(`RISKMAP: Already a number: ${value}`);
+                return value;
+            }
+            
+            if (value === undefined || value === null || value === '') {
+                console.log('RISKMAP: Empty value, returning 0');
+                return 0;
+            }
+            
+            let stringValue = String(value).trim();
+            
+            if (stringValue === '' || stringValue === 'N/A' || stringValue === 'n/a' || stringValue === 'NULL') {
+                console.log('RISKMAP: Invalid string value, returning 0');
+                return 0;
+            }
+            
+            console.log(`RISKMAP: Processing string: "${stringValue}"`);
+            
+            let cleanValue = stringValue;
+            
+            // Entferne Währungszeichen, Buchstaben, Leerzeichen und Prozentzeichen
+            cleanValue = cleanValue.replace(/[€$£¥₹₽¢₩₪₨₦₡₵₴₸₼₾₿]/g, '');
+            cleanValue = cleanValue.replace(/[A-Za-z]/g, '');
+            cleanValue = cleanValue.replace(/[\s]/g, '');
+            cleanValue = cleanValue.replace(/[%]/g, '');
+            
+            console.log(`RISKMAP: After removing currency/letters: "${cleanValue}"`);
+            
+            // Behandle verschiedene Zahlenformate
+            if (cleanValue.includes(',') && cleanValue.includes('.')) {
+                const lastComma = cleanValue.lastIndexOf(',');
+                const lastDot = cleanValue.lastIndexOf('.');
+                
+                if (lastDot > lastComma) {
+                    // Amerikanisches Format: 1,234.56
+                    cleanValue = cleanValue.replace(/,/g, '');
+                    console.log(`RISKMAP: American format detected: "${cleanValue}"`);
+                } else {
+                    // Europäisches Format: 1.234,56
+                    cleanValue = cleanValue.replace(/\./g, '').replace(',', '.');
+                    console.log(`RISKMAP: European format detected: "${cleanValue}"`);
+                }
+            } else if (cleanValue.includes(',')) {
+                const commaCount = (cleanValue.match(/,/g) || []).length;
+                const commaPos = cleanValue.indexOf(',');
+                const afterComma = cleanValue.substring(commaPos + 1);
+                
+                if (commaCount === 1 && afterComma.length <= 3 && /^\d+$/.test(afterComma)) {
+                    // Dezimaltrennzeichen: 123,45
+                    cleanValue = cleanValue.replace(',', '.');
+                    console.log(`RISKMAP: Comma as decimal separator: "${cleanValue}"`);
+                } else {
+                    // Tausendertrennzeichen: 1,234
+                    cleanValue = cleanValue.replace(/,/g, '');
+                    console.log(`RISKMAP: Comma as thousand separator: "${cleanValue}"`);
+                }
+            } else if (cleanValue.includes('.')) {
+                const dotCount = (cleanValue.match(/\./g) || []).length;
+                const dotPos = cleanValue.lastIndexOf('.');
+                const afterDot = cleanValue.substring(dotPos + 1);
+                
+                if (dotCount === 1 && afterDot.length <= 3 && /^\d+$/.test(afterDot)) {
+                    // Dezimaltrennzeichen: 123.45
+                    console.log(`RISKMAP: Dot as decimal separator: "${cleanValue}"`);
+                } else {
+                    // Tausendertrennzeichen: 1.234
+                    cleanValue = cleanValue.replace(/\./g, '');
+                    console.log(`RISKMAP: Dot as thousand separator: "${cleanValue}"`);
+                }
+            }
+            
+            cleanValue = cleanValue.replace(/[^\d.\-]/g, '');
+            
+            console.log(`RISKMAP: Final cleaned value: "${cleanValue}"`);
+            
+            const result = parseFloat(cleanValue) || 0;
+            console.log(`RISKMAP: Final extracted number: ${result}`);
+            
+            return result;
+        }
+
+        // KORRIGIERT: IDENTISCHE Datenextraktion wie in app.js
+        function extractCustomerDataRiskMap(rawData, headers) {
+            console.log('=== RISKMAP: Extracting customer data with ultra-robust number conversion ===');
+            console.log('RISKMAP: Available headers:', headers);
+            
+            const lcsmColumn = findColumnName(headers, 'LCSM');
+            const customerColumn = findColumnName(headers, 'Customer Name');
+            const riskColumn = findColumnName(headers, 'Total Risk');
+            const arrColumn = findColumnName(headers, 'ARR');
+            
+            console.log('RISKMAP: Column mappings found:', {
+                LCSM: lcsmColumn,
+                'Customer Name': customerColumn,
+                'Total Risk': riskColumn,
+                'ARR': arrColumn
+            });
+            
+            return rawData.map((row, index) => {
+                const customerName = customerColumn ? (row[customerColumn] || `Customer ${index + 1}`) : `Customer ${index + 1}`;
+                const lcsm = lcsmColumn ? (row[lcsmColumn] || 'N/A') : 'N/A';
+                
+                const totalRisk = riskColumn ? extractNumber(row[riskColumn]) : 0;
+                const arr = arrColumn ? extractNumber(row[arrColumn]) : 0;
+                
+                const extractedData = {
+                    'Customer Name': customerName,
+                    'LCSM': lcsm,
+                    'Total Risk': totalRisk,
+                    'ARR': arr,
+                    ...row
+                };
+                
+                console.log(`RISKMAP: Extracted customer ${index + 1}:`, {
+                    name: customerName,
+                    lcsm: lcsm,
+                    risk: totalRisk,
+                    arr: arr,
+                    originalARR: row[arrColumn],
+                    originalRisk: row[riskColumn]
+                });
+                
+                return extractedData;
+            });
+        }
+
+        // Globale Funktionen für Sidebar-Buttons
+        window.goToStart = function() {
+            console.log('ShowData function called from RiskMap');
+            window.location.href = 'app.html';
+        };
+
+        window.showArchive = function() {
+            console.log('Archive function called from RiskMap');
+            window.location.href = 'app.html?openArchive=true';
+        };
+
+        window.openHeatmap = function() {
+            console.log('RiskMap toggle - already in RiskMap');
+        };
+
+        window.triggerUpload = function() {
+            console.log('Upload Data function called from RiskMap');
+            const fileInput = document.getElementById('fileInput');
+            if (fileInput) {
+                fileInput.click();
+            }
+        };
+
+        window.performLogout = function() {
+            console.log('Logout function called from RiskMap');
+            try {
+                const allKeys = [
+                    'riskerSessionData', 'sessionData', 'appData', 'excelData', 'userData',
+                    'erledigtRows', 'archivedData', 'completedData', 'doneData',
+                    'filteredData', 'aggregatedData', 'originalAggregatedData',
+                    'headers', 'currentSort', 'selectedLCSM', 'archiveMode'
+                ];
+                
+                for (const key of allKeys) {
+                    localStorage.removeItem(key);
+                }
+                
+                localStorage.clear();
+                sessionStorage.clear();
+                window.location.href = "index.html";
+            } catch (error) {
+                console.error('Logout error:', error);
+                alert('Logout failed. Please try again.');
+            }
+        };
+
+        // RiskMap State
+        let riskmapData = [];
+        let currentSort = { column: 'Total Risk', direction: 'desc' };
+
+        // Daten-Loading mit flexibler Spaltenerkennung
+        function loadRiskmapData() {
+            console.log('=== RiskMap Data Loading Started ===');
+            
+            try {
+                const allKeys = ['riskerSessionData', 'sessionData', 'appData'];
+                let sessionData = null;
+                let foundKey = null;
+                
+                for (const key of allKeys) {
+                    try {
+                        const data = localStorage.getItem(key);
+                        if (data && data.length > 10) {
+                            const parsedData = JSON.parse(data);
+                            if (parsedData && (parsedData.aggregatedData || parsedData.filteredData || parsedData.excelData)) {
+                                sessionData = parsedData;
+                                foundKey = key;
+                                console.log(`RiskMap: Found valid session data in key: ${key}`);
+                                break;
+                            }
+                        }
+                    } catch (e) {
+                        console.warn(`RiskMap: Failed to parse key ${key}:`, e);
+                    }
+                }
+                
+                if (!sessionData) {
+                    console.warn('RiskMap: No session data found in any key');
+                    showNoDataMessage();
+                    return;
+                }
+                
+                let sourceData = null;
+                let dataSource = '';
+                
+                if (sessionData.aggregatedData && Array.isArray(sessionData.aggregatedData) && sessionData.aggregatedData.length > 0) {
+                    sourceData = sessionData.aggregatedData;
+                    dataSource = 'aggregatedData';
+                } else if (sessionData.filteredData && Array.isArray(sessionData.filteredData) && sessionData.filteredData.length > 0) {
+                    sourceData = sessionData.filteredData;
+                    dataSource = 'filteredData';
+                } else if (sessionData.excelData && Array.isArray(sessionData.excelData) && sessionData.excelData.length > 0) {
+                    sourceData = sessionData.excelData;
+                    dataSource = 'excelData';
+                } else {
+                    console.warn('RiskMap: No valid data arrays found in session');
+                    showNoDataMessage();
+                    return;
+                }
+                
+                console.log(`RiskMap: Using ${dataSource} with ${sourceData.length} items`);
+                
+                riskmapData = sourceData.filter(customer => {
+                    return !customer.erledigt && !customer.done && !customer.completed && !customer.archived;
+                });
+                
+                console.log(`RiskMap: Filtered data: ${riskmapData.length} active customers`);
+                
+                if (riskmapData.length > 0) {
+                    updateRiskmapDisplay();
+                    console.log('=== RiskMap Data Loading SUCCESS ===');
+                } else {
+                    console.warn('RiskMap: No active customers found after filtering');
+                    showNoDataMessage();
+                }
+                
+            } catch (error) {
+                console.error('=== RiskMap Data Loading ERROR ===', error);
+                showNoDataMessage();
+            }
+        }
+
+        function showNoDataMessage() {
+            const tableBody = document.getElementById('riskmapTableBody');
+            if (tableBody) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 30px; color: #ccc;">
+                            No data available. Please upload data first.
+                        </td>
+                    </tr>
+                `;
+            }
+            
+            document.getElementById('totalCustomers').textContent = '0';
+            document.getElementById('highRiskCustomers').textContent = '0';
+            document.getElementById('totalARR').textContent = '€0';
+        }
+
+        function updateRiskmapDisplay() {
+            console.log('RiskMap: Updating display with', riskmapData.length, 'customers');
+            updateStats();
+            renderRiskmapTable();
+            updateSortButtons();
+        }
+
+        function updateStats() {
+            const totalCustomers = riskmapData.length;
+            const highRiskCustomers = riskmapData.filter(customer => {
+                const risk = parseFloat(customer['Total Risk'] || customer['total_risk'] || customer['risk'] || 0);
+                return risk > 10;
+            }).length;
+            const totalARR = riskmapData.reduce((sum, customer) => {
+                const arr = parseFloat(customer['ARR'] || customer['arr'] || 0);
+                return sum + arr;
+            }, 0);
+
+            document.getElementById('totalCustomers').textContent = totalCustomers;
+            document.getElementById('highRiskCustomers').textContent = highRiskCustomers;
+            document.getElementById('totalARR').textContent = `€${totalARR.toLocaleString()}`;
+        }
+
+        function renderRiskmapTable() {
+            const tableBody = document.getElementById('riskmapTableBody');
+            
+            if (riskmapData.length === 0) {
+                showNoDataMessage();
+                return;
+            }
+
+            console.log('RiskMap: Rendering table with', riskmapData.length, 'customers');
+
+            // Sort data
+            const sortedData = [...riskmapData].sort((a, b) => {
+                let aVal, bVal;
+                
+                if (currentSort.column === 'ARR') {
+                    aVal = parseFloat(a['ARR'] || a['arr'] || 0);
+                    bVal = parseFloat(b['ARR'] || b['arr'] || 0);
+                } else if (currentSort.column === 'Total Risk') {
+                    aVal = parseFloat(a['Total Risk'] || a['total_risk'] || a['risk'] || 0);
+                    bVal = parseFloat(b['Total Risk'] || b['total_risk'] || b['risk'] || 0);
+                } else {
+                    return 0;
+                }
+                
+                if (currentSort.direction === 'asc') {
+                    return aVal - bVal;
+                } else {
+                    return bVal - aVal;
+                }
+            });
+
+            let tableHTML = '';
+            
+            sortedData.forEach((customer, index) => {
+                const customerName = customer['Customer Name'] || 
+                                   customer['Kunde'] || 
+                                   customer['Kundenname'] || 
+                                   customer['Customer'] || 
+                                   customer['Name'] || 
+                                   customer['name'] ||
+                                   customer['customer_name'] ||
+                                   customer['client_name'] ||
+                                   customer['company'] ||
+                                   customer['firma'] ||
+                                   `Customer ${index + 1}`;
+                                   
+                const lcsm = customer['LCSM'] || customer['lcsm'] || customer['manager'] || customer['csm'] || 'N/A';
+                const arr = parseFloat(customer['ARR'] || customer['arr'] || customer['revenue'] || 0);
+                const risk = parseFloat(customer['Total Risk'] || customer['total_risk'] || customer['risk'] || 0);
+                
+                let riskColor = '#4CAF50';
+                let riskBadge = 'LOW';
+                let riskBarWidth = '33%';
+                
+                if (risk >= 6 && risk <= 10) {
+                    riskColor = '#FF9800';
+                    riskBadge = 'MED';
+                    riskBarWidth = '66%';
+                }
+                if (risk >= 11) {
+                    riskColor = '#F44336';
+                    riskBadge = 'HIGH';
+                    riskBarWidth = '100%';
+                }
+                
+                tableHTML += `
+                    <tr>
+                        <td>${customerName}</td>
+                        <td>${lcsm}</td>
+                        <td>€${arr.toLocaleString()}</td>
+                        <td>${risk.toFixed(1)}</td>
+                        <td>
+                            <div class="risk-bar-container">
+                                <div class="risk-bar-bg">
+                                    <div class="risk-bar-fill" style="width: ${riskBarWidth}; background: ${riskColor};"></div>
+                                </div>
+                                <span class="risk-badge" style="background: ${riskColor}; color: #000;">${riskBadge}</span>
+                            </div>
+                        </td>
+                        <td>
+                            <button onclick="markAsDoneRiskmap(${index})" style="
+                                padding: 6px 12px; background: #4CAF50; color: white;
+                                border: none; border-radius: 6px; cursor: pointer; font-size: 12px;
+                            ">Mark Done</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            tableBody.innerHTML = tableHTML;
+            console.log('RiskMap: Table rendered successfully with', sortedData.length, 'rows');
+        }
+
+        // Mark Done mit verbesserter Session-Synchronisation
+        function markAsDoneRiskmap(customerIndex) {
+            try {
+                console.log('=== RiskMap Mark as Done Started ===');
+                console.log('Customer Index:', customerIndex);
+                
+                if (customerIndex < 0 || customerIndex >= riskmapData.length) {
+                    console.error('Invalid customer index:', customerIndex);
+                    return;
+                }
+                
+                const customer = riskmapData[customerIndex];
+                
+                const customerName = customer['Customer Name'] || 
+                                   customer['Kunde'] || 
+                                   customer['Kundenname'] || 
+                                   customer['Customer'] || 
+                                   customer['Name'] || 
+                                   customer['name'] ||
+                                   customer['customer_name'] ||
+                                   customer['client_name'] ||
+                                   customer['company'] ||
+                                   customer['firma'] ||
+                                   `Customer ${customerIndex + 1}`;
+                
+                console.log('RiskMap: Customer to mark as done:', customerName, customer);
+                
+                const customerKey = [
+                    customerName,
+                    customer['LCSM'] || customer['lcsm'] || '',
+                    (customer['ARR'] || customer['arr'] || 0).toFixed(2)
+                ].join('|');
+                
+                console.log('RiskMap: Customer key for matching:', customerKey);
+                
+                const allKeys = ['riskerSessionData', 'sessionData', 'appData'];
+                
+                allKeys.forEach(key => {
+                    try {
+                        let sessionData = JSON.parse(localStorage.getItem(key) || '{}');
+                        
+                        const archivedCustomer = {
+                            ...customer,
+                            erledigt: true,
+                            done: true,
+                            archived: true,
+                            archivedAt: new Date().toISOString(),
+                            archivedFrom: 'RiskMap'
+                        };
+                        
+                        if (!sessionData.erledigtRows) {
+                            sessionData.erledigtRows = [];
+                        }
+                        sessionData.erledigtRows.push(archivedCustomer);
+                        
+                        const dataArrays = ['excelData', 'filteredData', 'aggregatedData', 'originalAggregatedData'];
+                        
+                        dataArrays.forEach(arrayName => {
+                            if (Array.isArray(sessionData[arrayName])) {
+                                sessionData[arrayName].forEach(item => {
+                                    const itemKey = [
+                                        item['Customer Name'] || item['Kunde'] || item['name'] || '',
+                                        item['LCSM'] || item['lcsm'] || '',
+                                        (item['ARR'] || item['arr'] || 0).toFixed(2)
+                                    ].join('|');
+                                    
+                                    if (itemKey === customerKey) {
+                                        item.erledigt = true;
+                                        item.done = true;
+                                        item.archived = true;
+                                        item.archivedAt = new Date().toISOString();
+                                        console.log(`RiskMap: Marked as done in ${arrayName}:`, item);
+                                    }
+                                });
+                            }
+                        });
+                        
+                        localStorage.setItem(key, JSON.stringify(sessionData));
+                        console.log(`RiskMap: Updated session data in key: ${key}`);
+                        
+                    } catch (e) {
+                        console.warn(`RiskMap: Failed to update key ${key}:`, e);
+                    }
+                });
+                
+                riskmapData.splice(customerIndex, 1);
+                console.log('RiskMap: Removed from local data, remaining:', riskmapData.length);
+                
+                updateRiskmapDisplay();
+                
+                console.log(`=== RiskMap Mark as Done SUCCESS: ${customerName} moved to Archive ===`);
+                
+                showNotification(`${customerName} erfolgreich ins Archive verschoben!`);
+                
+            } catch (error) {
+                console.error('=== RiskMap Mark as Done ERROR ===', error);
+                alert('Fehler beim Verschieben ins Archive. Bitte versuche es erneut.');
+            }
+        }
+
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: #4CAF50;
+                color: white;
+                padding: 15px 25px;
+                border-radius: 8px;
+                z-index: 10000;
+                font-weight: bold;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+                animation: slideIn 0.3s ease-out;
+            `;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.style.animation = 'slideOut 0.3s ease-in';
+                    setTimeout(() => {
+                        if (notification.parentNode) {
+                            notification.parentNode.removeChild(notification);
+                        }
+                    }, 300);
+                }
+            }, 3000);
+        }
+
+        function sortByARR() {
+            if (currentSort.column === 'ARR') {
+                currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort.column = 'ARR';
+                currentSort.direction = 'desc';
+            }
+            
+            updateSortButtons();
+            renderRiskmapTable();
+        }
+
+        function sortByRisk() {
+            if (currentSort.column === 'Total Risk') {
+                currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort.column = 'Total Risk';
+                currentSort.direction = 'desc';
+            }
+            
+            updateSortButtons();
+            renderRiskmapTable();
+        }
+
+        function updateSortButtons() {
+            const arrBtn = document.getElementById('sortARR');
+            const riskBtn = document.getElementById('sortRisk');
+            
+            if (!arrBtn || !riskBtn) return;
+            
+            arrBtn.classList.remove('active');
+            riskBtn.classList.remove('active');
+            
+            if (currentSort.column === 'ARR') {
+                arrBtn.classList.add('active');
+                arrBtn.querySelector('.sort-arrow').textContent = currentSort.direction === 'asc' ? '↑' : '↓';
+                riskBtn.querySelector('.sort-arrow').textContent = '↓';
+            } else if (currentSort.column === 'Total Risk') {
+                riskBtn.classList.add('active');
+                riskBtn.querySelector('.sort-arrow').textContent = currentSort.direction === 'asc' ? '↑' : '↓';
+                arrBtn.querySelector('.sort-arrow').textContent = '↓';
+            } else {
+                riskBtn.classList.add('active');
+                arrBtn.querySelector('.sort-arrow').textContent = '↓';
+                riskBtn.querySelector('.sort-arrow').textContent = '↓';
+            }
+        }
+
+        // KORRIGIERT: File Upload mit IDENTISCHER Zahlenextraktion wie in app.js
+        function handleFileUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            console.log('=== RiskMap File Upload Started ===');
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                try {
+                    const data = new Uint8Array(event.target.result);
+                    
+                    const workbook = XLSX.read(data, { 
+                        type: 'array',
+                        cellText: false,
+                        cellNF: false,
+                        cellDates: false,
+                        raw: true
+                    });
+                    
+                    const sheet = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[sheet];
+                    
+                    const json = XLSX.utils.sheet_to_json(worksheet, { 
+                        header: 1,
+                        raw: true,
+                        defval: null
+                    });
+
+                    const headers = json[0].filter(header => header && header.toString().trim() !== '');
+                    console.log('RiskMap: Original headers found:', headers);
+                    
+                    let rawData = json.slice(1).map((row, rowIndex) => {
+                        let obj = {};
+                        headers.forEach((header, i) => {
+                            if (header && header.trim()) {
+                                obj[header] = row[i];
+                            }
+                        });
+                        return obj;
+                    }).filter(row => {
+                        return Object.values(row).some(value => 
+                            value !== undefined && 
+                            value !== null && 
+                            value !== '' && 
+                            value.toString().trim() !== ''
+                        );
+                    });
+
+                    console.log(`RiskMap: Raw data extracted: ${rawData.length} rows`);
+                    
+                    const extractedData = extractCustomerDataRiskMap(rawData, headers);
+                    console.log(`RiskMap: Extracted data: ${extractedData.length} customers`);
+                    
+                    if (extractedData.length > 0) {
+                        console.log('RiskMap: Sample extracted customer:', extractedData[0]);
+                        console.log('RiskMap: ARR values in first 5 customers:', extractedData.slice(0, 5).map(c => ({
+                            name: c['Customer Name'],
+                            arr: c.ARR,
+                            risk: c['Total Risk']
+                        })));
+                    }
+                    
+                    const sessionData = {
+                        excelData: rawData,
+                        filteredData: extractedData,
+                        aggregatedData: extractedData,
+                        originalAggregatedData: [...extractedData],
+                        selectedLCSM: null,
+                        erledigtRows: [],
+                        headers: headers,
+                        currentSort: { column: '', direction: 'desc' },
+                        archiveMode: false,
+                        timestamp: Date.now()
+                    };
+                    
+                    const allKeys = ['riskerSessionData', 'sessionData', 'appData'];
+                    for (const key of allKeys) {
+                        localStorage.setItem(key, JSON.stringify(sessionData));
+                        console.log(`RiskMap: Session data saved to key: ${key}`);
+                    }
+                    
+                    riskmapData = extractedData.filter(customer => !customer.erledigt);
+                    console.log('RiskMap: Updated local data:', riskmapData.length, 'customers');
+                    
+                    updateRiskmapDisplay();
+                    
+                    console.log('=== RiskMap File Upload SUCCESS ===');
+                    showNotification(`Datei erfolgreich hochgeladen: ${extractedData.length} Kunden mit korrekten ARR-Werten verarbeitet!`);
+                    
+                } catch (error) {
+                    console.error('=== RiskMap File Upload ERROR ===', error);
+                    alert(`Dateiverarbeitung fehlgeschlagen: ${error.message}`);
+                }
+            };
+
+            reader.readAsArrayBuffer(file);
+        }
+
+        // DOM Ready
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('=== RiskMap DOM Ready ===');
+            
+            loadRiskmapData();
+            setTimeout(loadRiskmapData, 500);
+            setTimeout(loadRiskmapData, 1000);
+            setTimeout(loadRiskmapData, 2000);
+            
+            const fileInput = document.getElementById('fileInput');
+            if (fileInput) {
+                fileInput.addEventListener('change', handleFileUpload, false);
+                console.log('RiskMap: File input listener added');
+            }
+
+            const sortARRBtn = document.getElementById('sortARR');
+            if (sortARRBtn) {
+                sortARRBtn.onclick = sortByARR;
+            }
+
+            const sortRiskBtn = document.getElementById('sortRisk');
+            if (sortRiskBtn) {
+                sortRiskBtn.onclick = sortByRisk;
+            }
+
+            setTimeout(updateSortButtons, 500);
+            setTimeout(updateSortButtons, 1000);
+
+            console.log('=== RiskMap Setup Complete ===');
+        });
+    </script>
+</body>
+</html>
