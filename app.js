@@ -1,4 +1,4 @@
-// app.js - KORRIGIERT: Synchrone ultra-robuste Zahlenextraktion
+// app.js - KORRIGIERT: Verbesserte Excel-Verarbeitung mit robuster Zahlen- und Namenerkennung
 
 const { DebugLogger, AutoSave, DataUtils, SessionManager, FileInputUtils, PrivacyUtils } = window.AppUtils;
 
@@ -19,23 +19,60 @@ let currentSliderSort = { column: 'Total Risk', direction: 'desc' };
 
 const displayColumns = ["ARR", "Customer Name", "LCSM", "Total Risk", "Actions"];
 
-// KORRIGIERT: IDENTISCHE Spalten-Mapping in allen Dateien
+// ERWEITERTE Spalten-Mapping für maximale Flexibilität
 const COLUMN_MAPPINGS = {
-    'LCSM': ['LCSM', 'lcsm', 'Lcsm', 'LcsM', 'SACHBEARBEITER', 'sachbearbeiter', 'Sachbearbeiter', 'CSM', 'csm', 'Manager', 'manager', 'MANAGER', 'Betreuer', 'betreuer', 'BETREUER'],
-    'Customer Name': ['Customer Name', 'customer name', 'CUSTOMER NAME', 'CustomerName', 'customername', 'CUSTOMERNAME', 'Customer Number', 'customer number', 'CUSTOMER NUMBER', 'CustomerNumber', 'customernumber', 'CUSTOMERNUMBER', 'Kunde', 'kunde', 'KUNDE', 'Kundenname', 'kundenname', 'KUNDENNAME', 'Kundennummer', 'kundennummer', 'KUNDENNUMMER', 'Name', 'name', 'NAME', 'Client', 'client', 'CLIENT'],
-    'Total Risk': ['Total Risk', 'total risk', 'TOTAL RISK', 'TotalRisk', 'totalrisk', 'TOTALRISK', 'Risk', 'risk', 'RISK', 'Risiko', 'risiko', 'RISIKO', 'Score', 'score', 'SCORE', 'Risk Score', 'risk score', 'RISK SCORE', 'RiskScore', 'riskscore', 'RISKSCORE'],
-    'ARR': ['ARR', 'arr', 'Arr', 'Annual Recurring Revenue', 'annual recurring revenue', 'ANNUAL RECURRING REVENUE', 'Revenue', 'revenue', 'REVENUE', 'Umsatz', 'umsatz', 'UMSATZ', 'Vertragswert', 'vertragswert', 'VERTRAGSWERT', 'Value', 'value', 'VALUE', 'Wert', 'wert', 'WERT', 'Amount', 'amount', 'AMOUNT']
+    'LCSM': ['LCSM', 'lcsm', 'Lcsm', 'LcsM', 'SACHBEARBEITER', 'sachbearbeiter', 'Sachbearbeiter', 'CSM', 'csm', 'Csm', 'Manager', 'manager', 'MANAGER', 'Betreuer', 'betreuer', 'BETREUER', 'Account Manager', 'account manager', 'ACCOUNT MANAGER', 'Customer Success Manager', 'customer success manager', 'Ansprechpartner', 'ansprechpartner', 'ANSPRECHPARTNER'],
+    'Customer Name': ['Customer Name', 'customer name', 'CUSTOMER NAME', 'CustomerName', 'customername', 'CUSTOMERNAME', 'Customer_Name', 'customer_name', 'CUSTOMER_NAME', 'Customer Number', 'customer number', 'CUSTOMER NUMBER', 'CustomerNumber', 'customernumber', 'CUSTOMERNUMBER', 'Customer_Number', 'customer_number', 'CUSTOMER_NUMBER', 'Kunde', 'kunde', 'KUNDE', 'Kundenname', 'kundenname', 'KUNDENNAME', 'Kunden Name', 'kunden name', 'KUNDEN NAME', 'Kundennummer', 'kundennummer', 'KUNDENNUMMER', 'Kunden Nummer', 'kunden nummer', 'KUNDEN NUMMER', 'Name', 'name', 'NAME', 'Client', 'client', 'CLIENT', 'Client Name', 'client name', 'CLIENT NAME', 'Company', 'company', 'COMPANY', 'Company Name', 'company name', 'COMPANY NAME', 'Firma', 'firma', 'FIRMA', 'Firmenname', 'firmenname', 'FIRMENNAME'],
+    'Total Risk': ['Total Risk', 'total risk', 'TOTAL RISK', 'TotalRisk', 'totalrisk', 'TOTALRISK', 'Total_Risk', 'total_risk', 'TOTAL_RISK', 'Risk', 'risk', 'RISK', 'Risiko', 'risiko', 'RISIKO', 'Score', 'score', 'SCORE', 'Risk Score', 'risk score', 'RISK SCORE', 'RiskScore', 'riskscore', 'RISKSCORE', 'Risk_Score', 'risk_score', 'RISK_SCORE', 'Gesamtrisiko', 'gesamtrisiko', 'GESAMTRISIKO', 'Gesamt Risiko', 'gesamt risiko', 'GESAMT RISIKO', 'Total', 'total', 'TOTAL'],
+    'ARR': ['ARR', 'arr', 'Arr', 'A.R.R.', 'a.r.r.', 'Annual Recurring Revenue', 'annual recurring revenue', 'ANNUAL RECURRING REVENUE', 'Revenue', 'revenue', 'REVENUE', 'Umsatz', 'umsatz', 'UMSATZ', 'Jahresumsatz', 'jahresumsatz', 'JAHRESUMSATZ', 'Vertragswert', 'vertragswert', 'VERTRAGSWERT', 'Value', 'value', 'VALUE', 'Wert', 'wert', 'WERT', 'Amount', 'amount', 'AMOUNT', 'Betrag', 'betrag', 'BETRAG', 'Contract Value', 'contract value', 'CONTRACT VALUE', 'Vertragssumme', 'vertragssumme', 'VERTRAGSSUMME']
 };
 
-// KORRIGIERT: IDENTISCHE Spaltenerkennung in allen Dateien
+// VERBESSERTE Spaltenerkennung ohne Case-Sensitivity
 function findColumnName(headers, targetColumn) {
     const possibleNames = COLUMN_MAPPINGS[targetColumn] || [targetColumn];
     
-    for (const header of headers) {
+    // Normalisiere alle Header (entferne Leerzeichen am Anfang/Ende und mehrfache Leerzeichen)
+    const normalizedHeaders = headers.map(h => h ? h.toString().trim().replace(/\s+/g, ' ') : '');
+    
+    for (let i = 0; i < normalizedHeaders.length; i++) {
+        const header = normalizedHeaders[i];
+        if (!header) continue;
+        
+        // Prüfe jede mögliche Variante
         for (const possibleName of possibleNames) {
-            if (header.toLowerCase().trim() === possibleName.toLowerCase().trim()) {
-                console.log(`APP: Found column mapping: "${header}" -> "${targetColumn}"`);
-                return header;
+            // Case-insensitive Vergleich mit normalisierten Strings
+            if (header.toLowerCase() === possibleName.toLowerCase()) {
+                console.log(`APP: Found column mapping: "${headers[i]}" -> "${targetColumn}"`);
+                return headers[i]; // Gib den Original-Header zurück
+            }
+        }
+    }
+    
+    // Fallback: Suche nach teilweisen Übereinstimmungen
+    for (let i = 0; i < normalizedHeaders.length; i++) {
+        const header = normalizedHeaders[i].toLowerCase();
+        if (!header) continue;
+        
+        // Spezielle Logik für verschiedene Spalten
+        if (targetColumn === 'Customer Name') {
+            if (header.includes('customer') || header.includes('kunde') || header.includes('client') || header.includes('company') || header.includes('firma') || header.includes('name')) {
+                console.log(`APP: Found partial match for Customer Name: "${headers[i]}"`);
+                return headers[i];
+            }
+        } else if (targetColumn === 'ARR') {
+            if (header.includes('arr') || header.includes('revenue') || header.includes('umsatz') || header.includes('value') || header.includes('wert') || header.includes('amount') || header.includes('betrag')) {
+                console.log(`APP: Found partial match for ARR: "${headers[i]}"`);
+                return headers[i];
+            }
+        } else if (targetColumn === 'Total Risk') {
+            if (header.includes('risk') || header.includes('risiko') || header.includes('score')) {
+                console.log(`APP: Found partial match for Total Risk: "${headers[i]}"`);
+                return headers[i];
+            }
+        } else if (targetColumn === 'LCSM') {
+            if (header.includes('lcsm') || header.includes('csm') || header.includes('manager') || header.includes('betreuer') || header.includes('sachbearbeiter')) {
+                console.log(`APP: Found partial match for LCSM: "${headers[i]}"`);
+                return headers[i];
             }
         }
     }
@@ -44,15 +81,17 @@ function findColumnName(headers, targetColumn) {
     return null;
 }
 
-// KORRIGIERT: IDENTISCHE ultra-robuste Zahlenextraktion in allen Dateien
+// VERBESSERTE Zahlenextraktion mit besserer Formatierung
 function extractNumber(value) {
     console.log(`APP: Processing value: "${value}" (type: ${typeof value})`);
     
+    // Wenn es bereits eine Zahl ist
     if (typeof value === 'number' && !isNaN(value)) {
         console.log(`APP: Already a number: ${value}`);
         return value;
     }
     
+    // Leere Werte
     if (value === undefined || value === null || value === '') {
         console.log('APP: Empty value, returning 0');
         return 0;
@@ -60,7 +99,8 @@ function extractNumber(value) {
     
     let stringValue = String(value).trim();
     
-    if (stringValue === '' || stringValue === 'N/A' || stringValue === 'n/a' || stringValue === 'NULL') {
+    // Ungültige String-Werte
+    if (stringValue === '' || stringValue.toLowerCase() === 'n/a' || stringValue.toLowerCase() === 'null' || stringValue === '-') {
         console.log('APP: Invalid string value, returning 0');
         return 0;
     }
@@ -69,11 +109,18 @@ function extractNumber(value) {
     
     let cleanValue = stringValue;
     
-    // Entferne Währungszeichen, Buchstaben, Leerzeichen und Prozentzeichen
+    // Entferne alle Währungszeichen und Buchstaben
     cleanValue = cleanValue.replace(/[€$£¥₹₽¢₩₪₨₦₡₵₴₸₼₾₿]/g, '');
+    cleanValue = cleanValue.replace(/EUR|USD|GBP|CHF/gi, '');
+    
+    // Entferne alle Buchstaben (außer Komma und Punkt)
     cleanValue = cleanValue.replace(/[A-Za-z]/g, '');
-    cleanValue = cleanValue.replace(/[\s]/g, '');
-    cleanValue = cleanValue.replace(/[%]/g, '');
+    
+    // Entferne Leerzeichen
+    cleanValue = cleanValue.replace(/\s/g, '');
+    
+    // Entferne Prozentzeichen
+    cleanValue = cleanValue.replace(/%/g, '');
     
     console.log(`APP: After removing currency/letters: "${cleanValue}"`);
     
@@ -92,11 +139,9 @@ function extractNumber(value) {
             console.log(`APP: European format detected: "${cleanValue}"`);
         }
     } else if (cleanValue.includes(',')) {
-        const commaCount = (cleanValue.match(/,/g) || []).length;
-        const commaPos = cleanValue.indexOf(',');
-        const afterComma = cleanValue.substring(commaPos + 1);
-        
-        if (commaCount === 1 && afterComma.length <= 3 && /^\d+$/.test(afterComma)) {
+        // Prüfe ob Komma als Dezimaltrennzeichen verwendet wird
+        const parts = cleanValue.split(',');
+        if (parts.length === 2 && parts[1].length <= 3 && /^\d+$/.test(parts[1])) {
             // Dezimaltrennzeichen: 123,45
             cleanValue = cleanValue.replace(',', '.');
             console.log(`APP: Comma as decimal separator: "${cleanValue}"`);
@@ -106,20 +151,19 @@ function extractNumber(value) {
             console.log(`APP: Comma as thousand separator: "${cleanValue}"`);
         }
     } else if (cleanValue.includes('.')) {
-        const dotCount = (cleanValue.match(/\./g) || []).length;
-        const dotPos = cleanValue.lastIndexOf('.');
-        const afterDot = cleanValue.substring(dotPos + 1);
-        
-        if (dotCount === 1 && afterDot.length <= 3 && /^\d+$/.test(afterDot)) {
-            // Dezimaltrennzeichen: 123.45
-            console.log(`APP: Dot as decimal separator: "${cleanValue}"`);
-        } else {
+        // Prüfe ob Punkt als Tausendertrennzeichen verwendet wird
+        const parts = cleanValue.split('.');
+        if (parts.length > 2 || (parts.length === 2 && parts[1].length > 3)) {
             // Tausendertrennzeichen: 1.234
             cleanValue = cleanValue.replace(/\./g, '');
             console.log(`APP: Dot as thousand separator: "${cleanValue}"`);
+        } else {
+            // Dezimaltrennzeichen: 123.45 (nichts zu tun)
+            console.log(`APP: Dot as decimal separator: "${cleanValue}"`);
         }
     }
     
+    // Entferne alle verbleibenden nicht-numerischen Zeichen (außer Punkt und Minus)
     cleanValue = cleanValue.replace(/[^\d.\-]/g, '');
     
     console.log(`APP: Final cleaned value: "${cleanValue}"`);
@@ -130,9 +174,9 @@ function extractNumber(value) {
     return result;
 }
 
-// KORRIGIERT: IDENTISCHE Datenextraktion in allen Dateien
+// VERBESSERTE Datenextraktion
 function extractCustomerData(rawData, headers) {
-    console.log('=== APP: Extracting customer data with ultra-robust number conversion ===');
+    console.log('=== APP: Extracting customer data with improved mappings ===');
     console.log('APP: Available headers:', headers);
     
     const lcsmColumn = findColumnName(headers, 'LCSM');
@@ -148,9 +192,30 @@ function extractCustomerData(rawData, headers) {
     });
     
     return rawData.map((row, index) => {
-        const customerName = customerColumn ? (row[customerColumn] || `Customer ${index + 1}`) : `Customer ${index + 1}`;
-        const lcsm = lcsmColumn ? (row[lcsmColumn] || 'N/A') : 'N/A';
+        // Extrahiere Kundennamen mit Fallback-Logik
+        let customerName = 'Unknown Customer';
+        if (customerColumn && row[customerColumn]) {
+            customerName = String(row[customerColumn]).trim();
+        } else {
+            // Fallback: Suche in allen Spalten nach einem sinnvollen Namen
+            for (const header of headers) {
+                const value = row[header];
+                if (value && typeof value === 'string' && value.trim().length > 2) {
+                    const lowerHeader = header.toLowerCase();
+                    if (lowerHeader.includes('name') || lowerHeader.includes('kunde') || lowerHeader.includes('client') || lowerHeader.includes('company')) {
+                        customerName = value.trim();
+                        break;
+                    }
+                }
+            }
+        }
         
+        // Stelle sicher, dass wir einen sinnvollen Namen haben
+        if (customerName === 'Unknown Customer' || !customerName) {
+            customerName = `Customer ${index + 1}`;
+        }
+        
+        const lcsm = lcsmColumn ? (row[lcsmColumn] || 'N/A') : 'N/A';
         const totalRisk = riskColumn ? extractNumber(row[riskColumn]) : 0;
         const arr = arrColumn ? extractNumber(row[arrColumn]) : 0;
         
@@ -159,7 +224,7 @@ function extractCustomerData(rawData, headers) {
             'LCSM': lcsm,
             'Total Risk': totalRisk,
             'ARR': arr,
-            ...row
+            ...row // Behalte alle Original-Daten
         };
         
         console.log(`APP: Extracted customer ${index + 1}:`, {
@@ -692,7 +757,7 @@ window.sortSlider = function(column) {
     console.log(`Slider sorted by ${column} ${currentSliderSort.direction}`);
 };
 
-// KORRIGIERT: File Upload mit RICHTIGEN XLSX-Optionen - DAS IST DER ECHTE FIX!
+// KORRIGIERT: File Upload mit BESSEREN XLSX-Optionen für korrekte Zahlenverarbeitung
 function handleFile(e) {
     const file = e.target.files[0];
     if (!file) return;
@@ -704,45 +769,76 @@ function handleFile(e) {
             
             const data = new Uint8Array(event.target.result);
             
-            // KORRIGIERT: Einfache XLSX-Optionen - HIER WAR DER FEHLER!
+            // KORRIGIERT: Verwende raw: true für korrekte Zahlenverarbeitung
             const workbook = XLSX.read(data, { 
-                type: 'array'
-                // ALLE anderen Optionen ENTFERNT!
+                type: 'array',
+                raw: true,           // WICHTIG: Behalte Rohwerte (Zahlen bleiben Zahlen)
+                cellDates: true,     // Datumswerte korrekt erkennen
+                cellNF: false,       // Keine Formatierung anwenden
+                cellText: false      // Keine Text-Formatierung
             });
             
             const sheet = workbook.SheetNames[0];
             const worksheet = workbook.Sheets[sheet];
             
-            // KORRIGIERT: Bessere JSON-Optionen - HIER WAR DER FEHLER!
+            // KORRIGIERT: Bessere JSON-Konvertierung
             const json = XLSX.utils.sheet_to_json(worksheet, { 
                 header: 1,
-                raw: false,           // <-- ÄNDERUNG: false statt true
-                defval: '',           // <-- ÄNDERUNG: '' statt null
-                blankrows: false      // <-- NEU
+                raw: true,           // WICHTIG: Rohwerte beibehalten
+                defval: '',          // Leere Zellen als leerer String
+                blankrows: false,    // Leere Zeilen überspringen
+                dateNF: 'dd/mm/yyyy' // Datumsformat
             });
 
-            headers = json[0].filter(header => header && header.toString().trim() !== '');
+            // Extrahiere Header und bereinige sie
+            headers = json[0].map(header => {
+                if (header === null || header === undefined) return '';
+                return String(header).replace(/\s+/g, ' ').trim();
+            }).filter(header => header !== '');
+
+            console.log("DEBUG: HEADER-ARRAY:", headers);      // <-- NEU!
+            console.log("DEBUG: JSON[0]:", json[0]);           // <-- NEU!
+            console.log("DEBUG: JSON (Länge):", json.length);  // <-- NEU!
+
+            window.headers = headers;
             console.log('APP: Original headers found:', headers);
             
-            let rawData = json.slice(1).map((row, rowIndex) => {
+            // Konvertiere Zeilen zu Objekten
+            let rawData = [];
+            for (let i = 1; i < json.length; i++) {
+                const row = json[i];
+                if (!row || row.length === 0) continue;
+                
+                // Prüfe ob die Zeile nicht komplett leer ist
+                let hasData = false;
+                for (let j = 0; j < row.length; j++) {
+                    if (row[j] !== null && row[j] !== undefined && String(row[j]).trim() !== '') {
+                        hasData = true;
+                        break;
+                    }
+                }
+                
+                if (!hasData) continue;
+                
                 let obj = {};
-                headers.forEach((header, i) => {
-                    if (header && header.trim()) {
-                        obj[header] = row[i];
+                headers.forEach((header, j) => {
+                    if (header) {
+                        // Behalte den Rohwert bei
+                        obj[header] = row[j] !== undefined ? row[j] : '';
                     }
                 });
-                return obj;
-            }).filter(row => {
-                return Object.values(row).some(value => 
-                    value !== undefined && 
-                    value !== null && 
-                    value !== '' && 
-                    value.toString().trim() !== ''
-                );
-            });
+                
+                rawData.push(obj);
+            }
 
             console.log(`APP: Raw data extracted: ${rawData.length} rows`);
             
+            // Debug: Zeige die ersten paar Zeilen
+            if (rawData.length > 0) {
+                console.log('APP: First 3 rows of raw data:', rawData.slice(0, 3));
+            }
+            
+            // Extrahiere und transformiere die Daten
             const extractedData = extractCustomerData(rawData, headers);
             console.log(`APP: Extracted data: ${extractedData.length} customers`);
             
@@ -753,21 +849,33 @@ function handleFile(e) {
                     arr: c.ARR,
                     risk: c['Total Risk']
                 })));
+                
+                // Prüfe ob wir vernünftige Daten haben
+                const hasValidData = extractedData.some(c => c.ARR > 0 || c['Total Risk'] > 0);
+                if (!hasValidData) {
+                    console.warn('APP: Warning - No valid numeric data found. Check column mappings.');
+                }
             }
             
+            // Speichere die Daten
             excelData = extractedData;
             aggregatedData = extractedData;
             originalAggregatedData = [...extractedData];
             
+            // Merge mit bestehenden erledigten Rows
             filteredData = DataUtils.mergeSessionWithData(erledigtRows, extractedData);
             selectedLCSM = 'ALL';
-            
+            window.headers = headers;
+            window.excelData = excelData;
+            window.filteredData = filteredData;
+            window.rawData = rawData; // falls rawData im Code existiert
             console.log('APP: Final data prepared:', {
                 excelData: excelData.length,
                 aggregatedData: aggregatedData.length,
                 filteredData: filteredData.length
             });
             
+            // Render UI
             renderTable(DataUtils.getActiveCustomers(filteredData));
             renderSortControls();
             updateTableVisibility();
@@ -785,11 +893,11 @@ function handleFile(e) {
             saveSession();
             
             console.log('=== APP: File Upload SUCCESS ===');
-            alert(`File uploaded successfully: ${extractedData.length} customers processed with corrected XLSX options`);
+            alert(`Datei erfolgreich hochgeladen: ${extractedData.length} Kunden verarbeitet`);
             
         } catch (error) {
             console.error('APP: Processing error:', error);
-            alert(`File processing failed: ${error.message}`);
+            alert(`Fehler beim Verarbeiten der Datei: ${error.message}`);
         }
     };
 
