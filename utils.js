@@ -304,7 +304,7 @@ window.AppUtils = {
         },
 
         getActiveCustomers: function(filteredData) {
-            return filteredData.filter(customer => !customer.erledigt && !customer.done && !customer.archived);
+            return filteredData.filter(customer => !customer.erledigt && !customer.done && !customer.archived && !customer.inWorkflow);
         },
 
         // KORRIGIERT: aggregateDataByCustomer mit IDENTISCHER Zahlenextraktion

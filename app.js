@@ -291,7 +291,7 @@ window.goToStart = function() {
     }
 
     const kpiContainer = document.getElementById('kpiDashboardContainer');
-    if (kpiContainer) kpiContainer.style.display = 'none';
+    if (kpiContainer) kpiContainer.classList.remove('active');
 
     archiveMode = false;
     const archiveBar = document.getElementById('archiveUploadBar');
@@ -319,7 +319,7 @@ window.showArchive = function() {
     }
 
     const kpiContainer = document.getElementById('kpiDashboardContainer');
-    if (kpiContainer) kpiContainer.style.display = 'none';
+    if (kpiContainer) kpiContainer.classList.remove('active');
 
     sliderMode = 'archive';
     openSlider();
@@ -330,7 +330,7 @@ window.openHeatmap = function() {
     console.log('RiskMap toggle function called - checking state');
 
     const kpiContainer = document.getElementById('kpiDashboardContainer');
-    if (kpiContainer) kpiContainer.style.display = 'none';
+    if (kpiContainer) kpiContainer.classList.remove('active');
     
     const currentUrl = window.location.href;
     
@@ -627,10 +627,8 @@ function renderSliderTable() {
             riskBarWidth = '100%';
         }
         
-        const actionButton = `<button onclick="removeFromArchiveSlider(${index})" style="
-            padding: 6px 12px; background: #f44336; color: white;
-            border: none; border-radius: 6px; cursor: pointer; font-size: 12px;
-        ">Remove</button>`;
+        const doneTag = row.tag === 'Done' ? `<span class="done-tag" onclick="removeFromArchiveSlider(${index})">Done</span>` : '';
+        const actionButton = `<button class="table-action-btn remove-btn" onclick="removeFromArchiveSlider(${index})">Remove</button>`;
         
         tableHTML += `
             <tr>
@@ -646,7 +644,7 @@ function renderSliderTable() {
                         <span class="risk-badge" style="background: ${riskColor}; color: #000;">${riskBadge}</span>
                     </div>
                 </td>
-                <td>${actionButton}</td>
+                <td>${doneTag}${actionButton}</td>
             </tr>
         `;
     });
@@ -680,11 +678,15 @@ window.removeFromArchiveSlider = function(index) {
                 aggregatedData[aggregatedIndex].archived = false;
                 console.log(`Customer ${customerName} marked as active again in aggregatedData`);
             }
-            
+
+            unmarkWorkflow(removedRow);
+
             updateSliderData();
             renderTable(DataUtils.getActiveCustomers(filteredData));
             saveSession();
-            
+
+            showToast('Removed from Archive.');
+
             DebugLogger.add('info', `Customer removed from archive: ${customerName}`);
         }
     } catch (error) {
@@ -910,18 +912,12 @@ function renderTable(data) {
             if (col === 'Actions') {
                 if (archiveMode) {
                     tableHTML += `<td>
-                        <button onclick="removeFromArchive(${index})" style="
-                            padding: 6px 12px; background: #f44336; color: white;
-                            border: none; border-radius: 6px; cursor: pointer;
-                        ">Remove</button>
+                        <button class="table-action-btn remove-btn" onclick="removeFromArchive(${index})">Remove</button>
                     </td>`;
                 } else {
                     tableHTML += `<td>
-                        <button onclick="markAsDone(${index})" style="
-                            padding: 6px 12px; background: #4CAF50;
-                            color: white; border: none; border-radius: 6px; cursor: pointer;"
-                            title="Archive this entry">Archive</button>
-                        <button class="workflow-add-btn" onclick="addCustomerToWorkflow(${index})" title="Add to Workflow">+ Add</button>
+                        <button class="table-action-btn" onclick="markAsDone(${index})" title="Archive this entry">Archive</button>
+                        <button class="table-action-btn" onclick="addCustomerToWorkflow(${index})" title="Add to Workflow">Add</button>
                     </td>`;
                 }
             } else if (col === 'ARR') {
@@ -997,6 +993,8 @@ window.markAsDone = function(index) {
             
             saveSession();
         }, 0);
+
+        showToast('Moved to archive.');
         
         DebugLogger.add('info', `Customer marked as done: ${customerName}`);
         
@@ -1028,15 +1026,19 @@ window.removeFromArchive = function(index) {
                 aggregatedData[aggregatedIndex].done = false;
                 aggregatedData[aggregatedIndex].archived = false;
             }
-            
+
+            unmarkWorkflow(removedRow);
+
             renderTable(erledigtRows);
-            
+
             if (sliderOpen) {
                 updateSliderData();
             }
-            
+
             saveSession();
-            
+
+            showToast('Removed from Archive.');
+
             DebugLogger.add('info', `Customer removed from archive: ${customerName}`);
         }
     } catch (error) {
@@ -1071,13 +1073,20 @@ function showKpiDashboard() {
 
     const kpiContainer = document.getElementById('kpiDashboardContainer');
     if (kpiContainer) {
-        kpiContainer.style.display = 'block';
+        kpiContainer.classList.add('active');
         renderKpiDashboard();
+        toggleFooter(true);
     }
 }
 
+function closeKpiDashboard(){
+    const kpiContainer = document.getElementById('kpiDashboardContainer');
+    if(kpiContainer) kpiContainer.classList.remove('active');
+    toggleFooter(false);
+}
+
 function renderKpiDashboard() {
-    const container = document.getElementById('kpiDashboardContainer');
+    const container = document.getElementById('kpiDashboardContent');
     if (!container) return;
     container.innerHTML = '';
 
@@ -1085,6 +1094,10 @@ function renderKpiDashboard() {
     card.className = 'kpi-dashboard-card';
 
     const controls = document.createElement('div');
+    controls.className = 'slider-filters-static';
+    controls.innerHTML = '<h3>Sort Data</h3>';
+    const btnWrap = document.createElement('div');
+    btnWrap.className = 'filter-buttons';
     const metricSelect = document.createElement('select');
     metricSelect.id = 'metricSelect';
     ['ARR','Total Risk','Objective Risk','Contact Risk','Contract Risk'].forEach(m => {
@@ -1105,9 +1118,10 @@ function renderKpiDashboard() {
     toggleHistory.innerHTML = '<input type="checkbox" id="toggleRiskHistory"> Show Risk History';
 
     controls.appendChild(metricSelect);
-    controls.appendChild(sortAsc);
-    controls.appendChild(sortDesc);
-    controls.appendChild(exportBtn);
+    btnWrap.appendChild(sortAsc);
+    btnWrap.appendChild(sortDesc);
+    btnWrap.appendChild(exportBtn);
+    controls.appendChild(btnWrap);
     controls.appendChild(toggleHistory);
     card.appendChild(controls);
 
@@ -1200,6 +1214,25 @@ function hideFaqModal(){
     if(bg) bg.style.display='none';
 }
 
+function showToast(message){
+    const container = document.getElementById('toastContainer');
+    if(!container) return;
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.textContent = message;
+    container.appendChild(toast);
+    requestAnimationFrame(()=>toast.classList.add('show'));
+    setTimeout(()=>{
+        toast.classList.remove('show');
+        setTimeout(()=>toast.remove(),300);
+    },2500);
+}
+
+window.saveCurrentSession = function(){
+    saveSession();
+    showToast('Session saved successfully.');
+};
+
 function addWorkflowEntry(row){
     const key = DataUtils.generateCustomerKey(row);
     if(!SessionManager.workflowEntries) SessionManager.workflowEntries = {};
@@ -1208,10 +1241,13 @@ function addWorkflowEntry(row){
             name: row['Customer Name'] || 'Unknown',
             lcsms: row['LCSM'] || '',
             totalRisk: parseFloat(row['Total Risk']) || 0,
-            addedAt: new Date().toISOString()
+            addedAt: new Date().toISOString(),
+            rowData: {...row}
         };
+        markInWorkflow(row);
         saveSession();
         renderWorkflowSidebar();
+        showToast('Added to Workflow.');
     }
 }
 
@@ -1219,6 +1255,20 @@ function addCustomerToWorkflow(index){
     const active = DataUtils.getActiveCustomers(filteredData);
     if(index < 0 || index >= active.length) return;
     addWorkflowEntry(active[index]);
+}
+
+function markInWorkflow(row){
+    const idx = DataUtils.findCustomerInArray(filteredData,row);
+    if(idx !== -1) filteredData[idx].inWorkflow = true;
+    const aIdx = DataUtils.findCustomerInArray(aggregatedData,row);
+    if(aIdx !== -1) aggregatedData[aIdx].inWorkflow = true;
+}
+
+function unmarkWorkflow(row){
+    const idx = DataUtils.findCustomerInArray(filteredData,row);
+    if(idx !== -1) filteredData[idx].inWorkflow = false;
+    const aIdx = DataUtils.findCustomerInArray(aggregatedData,row);
+    if(aIdx !== -1) aggregatedData[aIdx].inWorkflow = false;
 }
 
 function toggleWorkflow(){
@@ -1246,12 +1296,32 @@ function renderWorkflowSidebar(){
         table.innerHTML = '<tr><td>No entries</td></tr>';
         return;
     }
-    let html = '<tr><th>Customer</th><th>LCSM</th><th>Total Risk</th><th>Added</th></tr>';
-    rows.forEach(e=>{
-        html += `<tr><td>${e.name}</td><td>${e.lcsms}</td><td>${e.totalRisk}</td><td>${new Date(e.addedAt).toLocaleDateString()}</td></tr>`;
+    let html = '<tr><th>Customer</th><th>LCSM</th><th>Total Risk</th><th>Added</th><th>Action</th></tr>';
+    Object.entries(entries).forEach(([k,e])=>{
+        html += `<tr><td>${e.name}</td><td>${e.lcsms}</td><td>${e.totalRisk}</td><td>${new Date(e.addedAt).toLocaleDateString()}</td><td><button class="table-action-btn" onclick="completeWorkflow(\'${k}\')">Done</button></td></tr>`;
     });
     table.innerHTML = html;
 }
+
+window.completeWorkflow = function(key){
+    const entry = SessionManager.workflowEntries[key];
+    if(!entry) return;
+    const row = entry.rowData || {};
+    row.erledigt = true;
+    row.done = true;
+    row.archived = true;
+    row.tag = 'Done';
+    unmarkWorkflow(row);
+    if(DataUtils.findCustomerInArray(erledigtRows,row) === -1){
+        erledigtRows.push({...row});
+    }
+    saveSession();
+    delete SessionManager.workflowEntries[key];
+    renderWorkflowSidebar();
+    renderTable(DataUtils.getActiveCustomers(filteredData));
+    if(sliderOpen) updateSliderData();
+    showToast('Moved to archive.');
+};
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM Content Loaded - Setting up event listeners...');
@@ -1353,9 +1423,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.error('KPI Dashboard button not found!');
             }
 
+            const saveBtn = document.getElementById('saveSessionBtn');
+            if (saveBtn) {
+                saveBtn.onclick = window.saveCurrentSession;
+            }
+
             const workflowBtn = document.getElementById('workflowBtn');
             if (workflowBtn) {
                 workflowBtn.onclick = toggleWorkflow;
+            }
+
+            const closeKpiBtn = document.getElementById('closeKpiBtn');
+            if (closeKpiBtn) {
+                closeKpiBtn.onclick = closeKpiDashboard;
             }
 
             const closeSliderBtn = document.getElementById('closeSliderBtn');
