@@ -187,6 +187,8 @@ function saveSession() {
         currentSort: currentSort,
         archiveMode: archiveMode,
         lastSaveTime: AutoSave.lastSaveTime,
+        riskHistory: SessionManager.riskHistory,
+        workflowEntries: SessionManager.workflowEntries,
         timestamp: Date.now()
     };
     
@@ -234,6 +236,8 @@ function restoreSession() {
         headers = sessionData.headers || [];
         currentSort = sessionData.currentSort || { column: '', direction: 'desc' };
         archiveMode = sessionData.archiveMode || false;
+        SessionManager.riskHistory = sessionData.riskHistory || {};
+        SessionManager.workflowEntries = sessionData.workflowEntries || {};
         
         AutoSave.lastSaveTime = sessionData.lastSaveTime;
         
@@ -767,9 +771,12 @@ function handleFile(e) {
             excelData = extractedData;
             aggregatedData = extractedData;
             originalAggregatedData = [...extractedData];
-            
+
             filteredData = DataUtils.mergeSessionWithData(erledigtRows, extractedData);
             selectedLCSM = 'ALL';
+
+            SessionManager.riskHistory = AppUtils.buildRiskHistory(extractedData);
+            if(!SessionManager.workflowEntries) SessionManager.workflowEntries = {};
             
             console.log('APP: Final data prepared:', {
                 excelData: excelData.length,
@@ -914,6 +921,7 @@ function renderTable(data) {
                             padding: 6px 12px; background: #4CAF50;
                             color: white; border: none; border-radius: 6px; cursor: pointer;"
                             title="Archive this entry">Archive</button>
+                        <button class="workflow-add-btn" onclick="addCustomerToWorkflow(${index})" title="Add to Workflow">+ Add</button>
                     </td>`;
                 }
             } else if (col === 'ARR') {
@@ -1126,8 +1134,9 @@ function renderKpiDashboard() {
         chart = new Chart(document.getElementById('kpiChart').getContext('2d'), {
             type: 'bar',
             data: { labels, datasets:[{ label: metric, data, backgroundColor: '#ffd221' }] },
-            options: { responsive:true, plugins:{legend:{labels:{color:'#f1f1f1'}}}, scales:{x:{ticks:{color:'#f1f1f1'}}, y:{ticks:{color:'#f1f1f1'}}}}
+            options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{labels:{color:'#f1f1f1'}}}, scales:{x:{ticks:{color:'#f1f1f1'}}, y:{ticks:{color:'#f1f1f1'}}}}
         });
+        window.addEventListener('resize', ()=>chart.resize());
     }
 
     metricSelect.onchange = updateChart;
@@ -1158,7 +1167,8 @@ function renderRiskHistoryChart() {
         if(points.length) datasets.push({label:key,data:points,fill:false,borderColor:'#ffd221'});
     });
     if (window.riskHistoryChart) window.riskHistoryChart.destroy();
-    window.riskHistoryChart = new Chart(ctx, {type:'line',data:{datasets},options:{responsive:true,plugins:{legend:{labels:{color:'#f1f1f1'}}}, scales:{x:{type:'time',ticks:{color:'#f1f1f1'}}, y:{ticks:{color:'#f1f1f1'}}}}});
+    window.riskHistoryChart = new Chart(ctx, {type:'line',data:{datasets},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#f1f1f1'}}}, scales:{x:{type:'time',ticks:{color:'#f1f1f1'}}, y:{ticks:{color:'#f1f1f1'}}}}});
+    window.addEventListener('resize', ()=>window.riskHistoryChart.resize());
 
     ctx.canvas.onclick = function(evt){
         const points = window.riskHistoryChart.getElementsAtEventForMode(evt,'nearest',{intersect:true},true);
@@ -1188,6 +1198,59 @@ function showPopup(html){
 function hideFaqModal(){
     const bg=document.getElementById('faqPopupBg');
     if(bg) bg.style.display='none';
+}
+
+function addWorkflowEntry(row){
+    const key = DataUtils.generateCustomerKey(row);
+    if(!SessionManager.workflowEntries) SessionManager.workflowEntries = {};
+    if(!SessionManager.workflowEntries[key]){
+        SessionManager.workflowEntries[key] = {
+            name: row['Customer Name'] || 'Unknown',
+            lcsms: row['LCSM'] || '',
+            totalRisk: parseFloat(row['Total Risk']) || 0,
+            addedAt: new Date().toISOString()
+        };
+        saveSession();
+        renderWorkflowSidebar();
+    }
+}
+
+function addCustomerToWorkflow(index){
+    const active = DataUtils.getActiveCustomers(filteredData);
+    if(index < 0 || index >= active.length) return;
+    addWorkflowEntry(active[index]);
+}
+
+function toggleWorkflow(){
+    const bar = document.getElementById('workflowSidebar');
+    if(!bar) return;
+    const show = !bar.classList.contains('active');
+    if(show){
+        renderWorkflowSidebar();
+        bar.classList.add('active');
+        toggleFooter(true);
+    }else{
+        bar.classList.remove('active');
+        toggleFooter(false);
+    }
+}
+
+function renderWorkflowSidebar(){
+    const bar = document.getElementById('workflowSidebar');
+    if(!bar) return;
+    const table = bar.querySelector('.workflow-table');
+    if(!table) return;
+    const entries = SessionManager.workflowEntries || {};
+    const rows = Object.values(entries);
+    if(rows.length === 0){
+        table.innerHTML = '<tr><td>No entries</td></tr>';
+        return;
+    }
+    let html = '<tr><th>Customer</th><th>LCSM</th><th>Total Risk</th><th>Added</th></tr>';
+    rows.forEach(e=>{
+        html += `<tr><td>${e.name}</td><td>${e.lcsms}</td><td>${e.totalRisk}</td><td>${new Date(e.addedAt).toLocaleDateString()}</td></tr>`;
+    });
+    table.innerHTML = html;
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -1288,6 +1351,11 @@ document.addEventListener('DOMContentLoaded', function() {
             const kpiSuccess = forceButtonClick('kpiDashboardBtn', showKpiDashboard);
             if (!kpiSuccess) {
                 console.error('KPI Dashboard button not found!');
+            }
+
+            const workflowBtn = document.getElementById('workflowBtn');
+            if (workflowBtn) {
+                workflowBtn.onclick = toggleWorkflow;
             }
 
             const closeSliderBtn = document.getElementById('closeSliderBtn');

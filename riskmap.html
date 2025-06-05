@@ -656,6 +656,19 @@
             overflow-y: auto;
             box-shadow: 0 4px 32px rgba(0,0,0,0.3);
         }
+        #radarPopup { justify-content: flex-end; }
+        .radar-panel {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 50vw;
+            height: 100vh;
+            background-color: #23272b;
+            overflow-y: auto;
+            z-index: 100;
+            padding: 20px;
+            box-shadow: -3px 0 10px rgba(0,0,0,0.5);
+        }
 
         .radar-details-table {
             width: 100%;
@@ -684,6 +697,10 @@
         }
         .radar-actions .archive-btn { background: #4CAF50; color: #fff; }
         .radar-actions .todo-btn { background: #2196F3; color: #fff; }
+        .workflow-add-btn {
+            background: #ffd221;
+            color: #000;
+        }
         .radar-close {
             margin-top: 12px;
             padding: 6px 14px;
@@ -1099,6 +1116,7 @@
                                 padding: 6px 12px; background: #4CAF50; color: white;
                                 border: none; border-radius: 6px; cursor: pointer; font-size: 12px;"
                                 title="Archive this entry">Archive</button>
+                            <button class="workflow-add-btn" onclick="addToWorkflowRiskmap(${index})" title="Add to Workflow">+ Add</button>
                         </td>
                     </tr>
                 `;
@@ -1236,6 +1254,44 @@
                     }, 300);
                 }
             }, 3000);
+        }
+
+        function addToWorkflowRiskmap(index){
+            if(index < 0 || index >= riskmapData.length) return;
+            const c = riskmapData[index];
+            const name = c['Customer Name'] || c['Kunde'] || c['Name'] || `Customer ${index+1}`;
+            const lcsm = c['LCSM'] || c['lcsm'] || '';
+            const arr = parseFloat(c['ARR'] || c['arr'] || 0).toFixed(2);
+            const key = [name, lcsm, arr].join('|');
+            const entry = {name, lcsms: lcsm, totalRisk: parseFloat(c['Total Risk'] || c['risk'] || 0), addedAt: new Date().toISOString()};
+            const keys = ['riskerSessionData','sessionData','appData'];
+            keys.forEach(k=>{
+                let sd = JSON.parse(localStorage.getItem(k) || '{}');
+                if(!sd.workflowEntries) sd.workflowEntries = {};
+                sd.workflowEntries[key] = entry;
+                localStorage.setItem(k, JSON.stringify(sd));
+            });
+            showNotification(`${name} added to workflow`);
+        }
+
+        function addToWorkflowRadar(idx){
+            const data = getRadarData();
+            const row = data[idx];
+            if(!row) return;
+            const name = getField(row, ['Customer Name','Kunde','Name']) || `Customer ${idx+1}`;
+            const lcsm = getField(row, ['LCSM','CSM','Manager']) || '';
+            const arr = parseFloat(getField(row, ['ARR','Revenue','Umsatz']) || 0).toFixed(2);
+            const risk = parseFloat(getField(row, ['Total Risk','Risk']) || 0);
+            const key = [name, lcsm, arr].join('|');
+            const entry = {name, lcsms: lcsm, totalRisk: risk, addedAt: new Date().toISOString()};
+            const keys = ['riskerSessionData','sessionData','appData'];
+            keys.forEach(k=>{
+                let sd = JSON.parse(localStorage.getItem(k) || '{}');
+                if(!sd.workflowEntries) sd.workflowEntries = {};
+                sd.workflowEntries[key] = entry;
+                localStorage.setItem(k, JSON.stringify(sd));
+            });
+            showNotification(`${name} added to workflow`);
         }
 
         function sortByARR() {
@@ -1401,6 +1457,7 @@
                     `<td class="radar-actions">` +
                         `<button class="archive-btn" onclick="markAsDoneRiskmap(${riskmapData.indexOf(row)})" title="Archive this entry">Archive</button>` +
                         `<button class="todo-btn" onclick="toggleRadarDetail(${i})" title="Show details">Get To-Do</button>` +
+                        `<button class="workflow-add-btn" onclick="addToWorkflowRadar(${i})" title="Add to Workflow">+ Add</button>` +
                     `</td>` +
                 `</tr>`;
 
@@ -1590,7 +1647,7 @@
         });
     </script>
     <div id="radarPopup" class="popup-bg" style="display:none;">
-      <div class="popup-inner riskmap-popup-inner"></div>
+      <div class="popup-inner riskmap-popup-inner radar-panel"></div>
     </div>
 </body>
 </html>
