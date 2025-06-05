@@ -651,8 +651,8 @@
             color: #fff;
             border-radius: 18px;
             padding: 20px;
-            max-width: 95vw;
-            max-height: 90vh;
+            width: calc((100vw - 250px) / 2);
+            max-height: 70vh;
             overflow-y: auto;
             box-shadow: 0 4px 32px rgba(0,0,0,0.3);
         }
@@ -1097,8 +1097,8 @@
                         <td>
                             <button onclick="markAsDoneRiskmap(${index})" style="
                                 padding: 6px 12px; background: #4CAF50; color: white;
-                                border: none; border-radius: 6px; cursor: pointer; font-size: 12px;
-                            ">Mark Done</button>
+                                border: none; border-radius: 6px; cursor: pointer; font-size: 12px;"
+                                title="Archive this entry">Archive</button>
                         </td>
                     </tr>
                 `;
@@ -1108,10 +1108,10 @@
             console.log('RiskMap: Table rendered successfully with', sortedData.length, 'rows');
         }
 
-        // Mark Done mit verbesserter Session-Synchronisation
+        // Archive entry with improved session sync
         function markAsDoneRiskmap(customerIndex) {
             try {
-                console.log('=== RiskMap Mark as Done Started ===');
+                console.log('=== RiskMap Archive Started ===');
                 console.log('Customer Index:', customerIndex);
                 
                 if (customerIndex < 0 || customerIndex >= riskmapData.length) {
@@ -1198,12 +1198,12 @@
                 
                 updateRiskmapDisplay();
                 
-                console.log(`=== RiskMap Mark as Done SUCCESS: ${customerName} moved to Archive ===`);
+                console.log(`=== RiskMap Archive SUCCESS: ${customerName} moved to Archive ===`);
                 
                 showNotification(`${customerName} erfolgreich ins Archive verschoben!`);
                 
             } catch (error) {
-                console.error('=== RiskMap Mark as Done ERROR ===', error);
+                console.error('=== RiskMap Archive ERROR ===', error);
                 alert('Fehler beim Verschieben ins Archive. Bitte versuche es erneut.');
             }
         }
@@ -1399,8 +1399,8 @@
                     `<td>€${arrVal.toLocaleString()}</td>` +
                     `<td>${risk.toFixed(1)}</td>` +
                     `<td class="radar-actions">` +
-                        `<button class="archive-btn" onclick="markAsDoneRiskmap(${riskmapData.indexOf(row)})">Archive</button>` +
-                        `<button class="todo-btn" onclick="toggleRadarDetail(${i})">Get To-Do</button>` +
+                        `<button class="archive-btn" onclick="markAsDoneRiskmap(${riskmapData.indexOf(row)})" title="Archive this entry">Archive</button>` +
+                        `<button class="todo-btn" onclick="toggleRadarDetail(${i})" title="Show details">Get To-Do</button>` +
                     `</td>` +
                 `</tr>`;
 
