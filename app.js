@@ -1,6 +1,6 @@
 // app.js - KORRIGIERT: Synchrone ultra-robuste Zahlenextraktion
 
-const { DebugLogger, AutoSave, DataUtils, SessionManager, FileInputUtils, PrivacyUtils, findColumnName, extractNumber, extractCustomerData } = window.AppUtils;
+const { DebugLogger, AutoSave, DataUtils, SessionManager, FileInputUtils, PrivacyUtils } = window.AppUtils;
 
 let excelData = [];
 let headers = [];
@@ -19,6 +19,161 @@ let currentSliderSort = { column: 'Total Risk', direction: 'desc' };
 
 const displayColumns = ["ARR", "Customer Name", "LCSM", "Total Risk", "Actions"];
 
+// KORRIGIERT: IDENTISCHE Spalten-Mapping in allen Dateien
+const COLUMN_MAPPINGS = {
+    'LCSM': ['LCSM', 'lcsm', 'Lcsm', 'LcsM', 'SACHBEARBEITER', 'sachbearbeiter', 'Sachbearbeiter', 'CSM', 'csm', 'Manager', 'manager', 'MANAGER', 'Betreuer', 'betreuer', 'BETREUER'],
+    'Customer Name': ['Customer Name', 'customer name', 'CUSTOMER NAME', 'CustomerName', 'customername', 'CUSTOMERNAME', 'Customer Number', 'customer number', 'CUSTOMER NUMBER', 'CustomerNumber', 'customernumber', 'CUSTOMERNUMBER', 'Kunde', 'kunde', 'KUNDE', 'Kundenname', 'kundenname', 'KUNDENNAME', 'Kundennummer', 'kundennummer', 'KUNDENNUMMER', 'Name', 'name', 'NAME', 'Client', 'client', 'CLIENT'],
+    'Total Risk': ['Total Risk', 'total risk', 'TOTAL RISK', 'TotalRisk', 'totalrisk', 'TOTALRISK', 'Risk', 'risk', 'RISK', 'Risiko', 'risiko', 'RISIKO', 'Score', 'score', 'SCORE', 'Risk Score', 'risk score', 'RISK SCORE', 'RiskScore', 'riskscore', 'RISKSCORE'],
+    'ARR': ['ARR', 'arr', 'Arr', 'Annual Recurring Revenue', 'annual recurring revenue', 'ANNUAL RECURRING REVENUE', 'Revenue', 'revenue', 'REVENUE', 'Umsatz', 'umsatz', 'UMSATZ', 'Vertragswert', 'vertragswert', 'VERTRAGSWERT', 'Value', 'value', 'VALUE', 'Wert', 'wert', 'WERT', 'Amount', 'amount', 'AMOUNT']
+};
+
+// KORRIGIERT: IDENTISCHE Spaltenerkennung in allen Dateien
+function findColumnName(headers, targetColumn) {
+    const possibleNames = COLUMN_MAPPINGS[targetColumn] || [targetColumn];
+    
+    for (const header of headers) {
+        for (const possibleName of possibleNames) {
+            if (header.toLowerCase().trim() === possibleName.toLowerCase().trim()) {
+                console.log(`APP: Found column mapping: "${header}" -> "${targetColumn}"`);
+                return header;
+            }
+        }
+    }
+    
+    console.warn(`APP: Column not found for ${targetColumn}. Available headers:`, headers);
+    return null;
+}
+
+// KORRIGIERT: IDENTISCHE ultra-robuste Zahlenextraktion in allen Dateien
+function extractNumber(value) {
+    console.log(`APP: Processing value: "${value}" (type: ${typeof value})`);
+    
+    if (typeof value === 'number' && !isNaN(value)) {
+        console.log(`APP: Already a number: ${value}`);
+        return value;
+    }
+    
+    if (value === undefined || value === null || value === '') {
+        console.log('APP: Empty value, returning 0');
+        return 0;
+    }
+    
+    let stringValue = String(value).trim();
+    
+    if (stringValue === '' || stringValue === 'N/A' || stringValue === 'n/a' || stringValue === 'NULL') {
+        console.log('APP: Invalid string value, returning 0');
+        return 0;
+    }
+    
+    console.log(`APP: Processing string: "${stringValue}"`);
+    
+    let cleanValue = stringValue;
+    
+    // Entferne Währungszeichen, Buchstaben, Leerzeichen und Prozentzeichen
+    cleanValue = cleanValue.replace(/[€$£¥₹₽¢₩₪₨₦₡₵₴₸₼₾₿]/g, '');
+    cleanValue = cleanValue.replace(/[A-Za-z]/g, '');
+    cleanValue = cleanValue.replace(/[\s]/g, '');
+    cleanValue = cleanValue.replace(/[%]/g, '');
+    
+    console.log(`APP: After removing currency/letters: "${cleanValue}"`);
+    
+    // Behandle verschiedene Zahlenformate
+    if (cleanValue.includes(',') && cleanValue.includes('.')) {
+        const lastComma = cleanValue.lastIndexOf(',');
+        const lastDot = cleanValue.lastIndexOf('.');
+        
+        if (lastDot > lastComma) {
+            // Amerikanisches Format: 1,234.56
+            cleanValue = cleanValue.replace(/,/g, '');
+            console.log(`APP: American format detected: "${cleanValue}"`);
+        } else {
+            // Europäisches Format: 1.234,56
+            cleanValue = cleanValue.replace(/\./g, '').replace(',', '.');
+            console.log(`APP: European format detected: "${cleanValue}"`);
+        }
+    } else if (cleanValue.includes(',')) {
+        const commaCount = (cleanValue.match(/,/g) || []).length;
+        const commaPos = cleanValue.indexOf(',');
+        const afterComma = cleanValue.substring(commaPos + 1);
+        
+        if (commaCount === 1 && afterComma.length <= 3 && /^\d+$/.test(afterComma)) {
+            // Dezimaltrennzeichen: 123,45
+            cleanValue = cleanValue.replace(',', '.');
+            console.log(`APP: Comma as decimal separator: "${cleanValue}"`);
+        } else {
+            // Tausendertrennzeichen: 1,234
+            cleanValue = cleanValue.replace(/,/g, '');
+            console.log(`APP: Comma as thousand separator: "${cleanValue}"`);
+        }
+    } else if (cleanValue.includes('.')) {
+        const dotCount = (cleanValue.match(/\./g) || []).length;
+        const dotPos = cleanValue.lastIndexOf('.');
+        const afterDot = cleanValue.substring(dotPos + 1);
+        
+        if (dotCount === 1 && afterDot.length <= 3 && /^\d+$/.test(afterDot)) {
+            // Dezimaltrennzeichen: 123.45
+            console.log(`APP: Dot as decimal separator: "${cleanValue}"`);
+        } else {
+            // Tausendertrennzeichen: 1.234
+            cleanValue = cleanValue.replace(/\./g, '');
+            console.log(`APP: Dot as thousand separator: "${cleanValue}"`);
+        }
+    }
+    
+    cleanValue = cleanValue.replace(/[^\d.\-]/g, '');
+    
+    console.log(`APP: Final cleaned value: "${cleanValue}"`);
+    
+    const result = parseFloat(cleanValue) || 0;
+    console.log(`APP: Final extracted number: ${result}`);
+    
+    return result;
+}
+
+// KORRIGIERT: IDENTISCHE Datenextraktion in allen Dateien
+function extractCustomerData(rawData, headers) {
+    console.log('=== APP: Extracting customer data with ultra-robust number conversion ===');
+    console.log('APP: Available headers:', headers);
+    
+    const lcsmColumn = findColumnName(headers, 'LCSM');
+    const customerColumn = findColumnName(headers, 'Customer Name');
+    const riskColumn = findColumnName(headers, 'Total Risk');
+    const arrColumn = findColumnName(headers, 'ARR');
+    
+    console.log('APP: Column mappings found:', {
+        LCSM: lcsmColumn,
+        'Customer Name': customerColumn,
+        'Total Risk': riskColumn,
+        'ARR': arrColumn
+    });
+    
+    return rawData.map((row, index) => {
+        const customerName = customerColumn ? (row[customerColumn] || `Customer ${index + 1}`) : `Customer ${index + 1}`;
+        const lcsm = lcsmColumn ? (row[lcsmColumn] || 'N/A') : 'N/A';
+        
+        const totalRisk = riskColumn ? extractNumber(row[riskColumn]) : 0;
+        const arr = arrColumn ? extractNumber(row[arrColumn]) : 0;
+        
+        const extractedData = {
+            'Customer Name': customerName,
+            'LCSM': lcsm,
+            'Total Risk': totalRisk,
+            'ARR': arr,
+            ...row
+        };
+        
+        console.log(`APP: Extracted customer ${index + 1}:`, {
+            name: customerName,
+            lcsm: lcsm,
+            risk: totalRisk,
+            arr: arr,
+            originalARR: row[arrColumn],
+            originalRisk: row[riskColumn]
+        });
+        
+        return extractedData;
+    });
+}
 
 function saveSession() {
     const sessionData = {
@@ -130,7 +285,10 @@ window.goToStart = function() {
     if (sliderOpen) {
         closeSlider();
     }
-    
+
+    const kpiContainer = document.getElementById('kpiDashboardContainer');
+    if (kpiContainer) kpiContainer.style.display = 'none';
+
     archiveMode = false;
     const archiveBar = document.getElementById('archiveUploadBar');
     if (archiveBar) {
@@ -155,7 +313,10 @@ window.showArchive = function() {
     if (sliderOpen) {
         closeSlider();
     }
-    
+
+    const kpiContainer = document.getElementById('kpiDashboardContainer');
+    if (kpiContainer) kpiContainer.style.display = 'none';
+
     sliderMode = 'archive';
     openSlider();
     console.log('Archive function executed');
@@ -163,6 +324,9 @@ window.showArchive = function() {
 
 window.openHeatmap = function() {
     console.log('RiskMap toggle function called - checking state');
+
+    const kpiContainer = document.getElementById('kpiDashboardContainer');
+    if (kpiContainer) kpiContainer.style.display = 'none';
     
     const currentUrl = window.location.href;
     
@@ -466,8 +630,8 @@ function renderSliderTable() {
         
         tableHTML += `
             <tr>
-                <td>${AppUtils.escapeHTML(customerName)}</td>
-                <td>${AppUtils.escapeHTML(lcsm)}</td>
+                <td>${customerName}</td>
+                <td>${lcsm}</td>
                 <td>€${arr.toLocaleString()}</td>
                 <td>${risk.toFixed(1)}</td>
                 <td>
@@ -748,8 +912,8 @@ function renderTable(data) {
                     tableHTML += `<td>
                         <button onclick="markAsDone(${index})" style="
                             padding: 6px 12px; background: #4CAF50;
-                            color: white; border: none; border-radius: 6px; cursor: pointer;
-                        ">Archive</button>
+                            color: white; border: none; border-radius: 6px; cursor: pointer;"
+                            title="Archive this entry">Archive</button>
                     </td>`;
                 }
             } else if (col === 'ARR') {
@@ -757,10 +921,9 @@ function renderTable(data) {
                 tableHTML += `<td>€${arr.toLocaleString()}</td>`;
             } else if (col === 'Customer Name') {
                 const customerName = row['Customer Name'] || row['Kunde'] || row['Kundenname'] || row['Customer'] || row['Name'] || 'Unknown';
-                tableHTML += `<td>${AppUtils.escapeHTML(customerName)}</td>`;
+                tableHTML += `<td>${customerName}</td>`;
             } else {
-                const cellValue = row[col] || '';
-                tableHTML += `<td>${AppUtils.escapeHTML(cellValue)}</td>`;
+                tableHTML += `<td>${row[col] || ''}</td>`;
             }
         });
         tableHTML += '</tr>';
@@ -892,6 +1055,141 @@ function checkUrlParameters() {
     }
 }
 
+function showKpiDashboard() {
+    if (sliderOpen) closeSlider();
+
+    const tableContainer = document.getElementById('tableContainer');
+    if (tableContainer) tableContainer.style.display = 'none';
+
+    const kpiContainer = document.getElementById('kpiDashboardContainer');
+    if (kpiContainer) {
+        kpiContainer.style.display = 'block';
+        renderKpiDashboard();
+    }
+}
+
+function renderKpiDashboard() {
+    const container = document.getElementById('kpiDashboardContainer');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const card = document.createElement('div');
+    card.className = 'kpi-dashboard-card';
+
+    const controls = document.createElement('div');
+    const metricSelect = document.createElement('select');
+    metricSelect.id = 'metricSelect';
+    ['ARR','Total Risk','Objective Risk','Contact Risk','Contract Risk'].forEach(m => {
+        const opt = document.createElement('option');
+        opt.value = m;
+        opt.textContent = m;
+        metricSelect.appendChild(opt);
+    });
+
+    const sortAsc = document.createElement('button');
+    sortAsc.textContent = 'Sort ↑';
+    const sortDesc = document.createElement('button');
+    sortDesc.textContent = 'Sort ↓';
+    const exportBtn = document.createElement('button');
+    exportBtn.textContent = '📤 Get Graphic';
+    exportBtn.className = 'dashboard-export-btn';
+    const toggleHistory = document.createElement('label');
+    toggleHistory.innerHTML = '<input type="checkbox" id="toggleRiskHistory"> Show Risk History';
+
+    controls.appendChild(metricSelect);
+    controls.appendChild(sortAsc);
+    controls.appendChild(sortDesc);
+    controls.appendChild(exportBtn);
+    controls.appendChild(toggleHistory);
+    card.appendChild(controls);
+
+    const chartWrap = document.createElement('div');
+    chartWrap.className = 'chart-container';
+    chartWrap.innerHTML = '<canvas id="kpiChart"></canvas>';
+    card.appendChild(chartWrap);
+
+    const historyWrap = document.createElement('div');
+    historyWrap.id = 'riskHistoryChartContainer';
+    historyWrap.className = 'chart-container';
+    historyWrap.style.display = 'none';
+    historyWrap.innerHTML = '<select id="riskTypeSelect"><option value="Total">Total Risk</option><option value="Objective">Objective Risk</option><option value="Contact">Contact Risk</option><option value="Contract">Contract Risk</option></select> <select id="riskLevelSelect"><option value="all">All</option><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select><canvas id="riskHistoryChart"></canvas>';
+    card.appendChild(historyWrap);
+
+    container.appendChild(card);
+
+    let chart;
+    function updateChart() {
+        const metric = metricSelect.value;
+        const labels = aggregatedData.map(r => r['Customer Name']);
+        const data = aggregatedData.map(r => parseFloat(r[metric]) || 0);
+        if (chart) chart.destroy();
+        chart = new Chart(document.getElementById('kpiChart').getContext('2d'), {
+            type: 'bar',
+            data: { labels, datasets:[{ label: metric, data, backgroundColor: '#ffd221' }] },
+            options: { responsive:true, plugins:{legend:{labels:{color:'#f1f1f1'}}}, scales:{x:{ticks:{color:'#f1f1f1'}}, y:{ticks:{color:'#f1f1f1'}}}}
+        });
+    }
+
+    metricSelect.onchange = updateChart;
+    sortAsc.onclick = () => { aggregatedData.sort((a,b)=> (a[metricSelect.value]||0)-(b[metricSelect.value]||0)); updateChart(); };
+    sortDesc.onclick = () => { aggregatedData.sort((a,b)=> (b[metricSelect.value]||0)-(a[metricSelect.value]||0)); updateChart(); };
+    exportBtn.onclick = () => { if(chart) AppUtils.exportChartAsPng(chart,'kpi-chart.png'); };
+    document.getElementById('toggleRiskHistory').onchange = function(){
+        historyWrap.style.display = this.checked ? 'block' : 'none';
+        if(this.checked) renderRiskHistoryChart();
+    };
+
+    updateChart();
+}
+
+function renderRiskHistoryChart() {
+    const historyWrap = document.getElementById('riskHistoryChartContainer');
+    if (!historyWrap) return;
+    const riskType = document.getElementById('riskTypeSelect').value;
+    const riskLevel = document.getElementById('riskLevelSelect').value;
+    const ctx = document.getElementById('riskHistoryChart').getContext('2d');
+    const filtered = AppUtils.filterRiskDataByType(SessionManager.riskHistory, riskType);
+    const datasets = [];
+    Object.keys(filtered).forEach(key => {
+        const points = filtered[key].filter(p => {
+            const lvl = p.value < 50 ? 'low' : p.value > 100 ? 'high' : 'medium';
+            return riskLevel === 'all' || riskLevel === lvl;
+        }).map(p => ({x:new Date(p.timestamp), y:p.value, meta:p.entry}));
+        if(points.length) datasets.push({label:key,data:points,fill:false,borderColor:'#ffd221'});
+    });
+    if (window.riskHistoryChart) window.riskHistoryChart.destroy();
+    window.riskHistoryChart = new Chart(ctx, {type:'line',data:{datasets},options:{responsive:true,plugins:{legend:{labels:{color:'#f1f1f1'}}}, scales:{x:{type:'time',ticks:{color:'#f1f1f1'}}, y:{ticks:{color:'#f1f1f1'}}}}});
+
+    ctx.canvas.onclick = function(evt){
+        const points = window.riskHistoryChart.getElementsAtEventForMode(evt,'nearest',{intersect:true},true);
+        if(points.length){
+            const ds = window.riskHistoryChart.data.datasets[points[0].datasetIndex];
+            const point = ds.data[points[0].index];
+            const info = `<div class='privacy-popup-content'><h3>${ds.label}</h3><p>${riskType} Risk: ${point.y}</p><p>Date: ${new Date(point.x).toLocaleString()}</p></div>`;
+            showPopup(info);
+        }
+    };
+}
+
+function showFaqModal() {
+    const faqHtml = `<div class='privacy-popup-content'><h3>FAQ</h3><p>This dashboard helps visualize risk metrics. Upload data, then open the KPI Dashboard to view charts. Use the risk history toggle to see trends over time.</p></div>`;
+    showPopup(faqHtml);
+}
+
+function showPopup(html){
+    const inner = document.getElementById('faqPopupInner');
+    const bg = document.getElementById('faqPopupBg');
+    if(inner && bg){
+        inner.innerHTML = html;
+        bg.style.display='flex';
+    }
+}
+
+function hideFaqModal(){
+    const bg=document.getElementById('faqPopupBg');
+    if(bg) bg.style.display='none';
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM Content Loaded - Setting up event listeners...');
     
@@ -987,6 +1285,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.error('Archive button not found!');
             }
 
+            const kpiSuccess = forceButtonClick('kpiDashboardBtn', showKpiDashboard);
+            if (!kpiSuccess) {
+                console.error('KPI Dashboard button not found!');
+            }
+
             const closeSliderBtn = document.getElementById('closeSliderBtn');
             if (closeSliderBtn) {
                 closeSliderBtn.onclick = function() {
@@ -1002,6 +1305,18 @@ document.addEventListener('DOMContentLoaded', function() {
                     if(e.target === this) this.style.display = 'none';
                 });
                 console.log('Dialog background listener added');
+            }
+
+            const faqBtn = document.getElementById('faqBtn');
+            if (faqBtn) {
+                faqBtn.onclick = showFaqModal;
+            }
+
+            const faqBg = document.getElementById('faqPopupBg');
+            if (faqBg) {
+                faqBg.addEventListener('click', function(e){
+                    if(e.target === this) hideFaqModal();
+                });
             }
 
             updateTableVisibility();

@@ -48,12 +48,6 @@ function throttle(fn, limit = 300) {
     };
 }
 
-function escapeHTML(str) {
-    const div = document.createElement('div');
-    div.textContent = str == null ? '' : String(str);
-    return div.innerHTML;
-}
-
 // =============================================================================
 // GLOBALER NAMESPACE (OHNE ES6 EXPORTS)
 // =============================================================================
@@ -66,8 +60,6 @@ window.AppUtils = {
         'Total Risk': ['Total Risk', 'total risk', 'TOTAL RISK', 'TotalRisk', 'totalrisk', 'TOTALRISK', 'Risk', 'risk', 'RISK', 'Risiko', 'risiko', 'RISIKO', 'Score', 'score', 'SCORE', 'Risk Score', 'risk score', 'RISK SCORE', 'RiskScore', 'riskscore', 'RISKSCORE'],
         'ARR': ['ARR', 'arr', 'Arr', 'Annual Recurring Revenue', 'annual recurring revenue', 'ANNUAL RECURRING REVENUE', 'Revenue', 'revenue', 'REVENUE', 'Umsatz', 'umsatz', 'UMSATZ', 'Vertragswert', 'vertragswert', 'VERTRAGSWERT', 'Value', 'value', 'VALUE', 'Wert', 'wert', 'WERT', 'Amount', 'amount', 'AMOUNT']
     },
-
-    escapeHTML: escapeHTML,
 
     // KORRIGIERT: IDENTISCHE Spaltenerkennung wie in app.js und riskmap.html
     findColumnName: function(headers, targetColumn) {
@@ -177,10 +169,10 @@ window.AppUtils = {
         console.log('=== UTILS: Extracting customer data with ultra-robust number conversion ===');
         console.log('UTILS: Available headers:', headers);
         
-        const lcsmColumn = this.findColumnName(headers, 'LCSM');
-        const customerColumn = this.findColumnName(headers, 'Customer Name');
-        const riskColumn = this.findColumnName(headers, 'Total Risk');
-        const arrColumn = this.findColumnName(headers, 'ARR');
+        const lcsmColumn = window.AppUtils.findColumnName(headers, 'LCSM');
+        const customerColumn = window.AppUtils.findColumnName(headers, 'Customer Name');
+        const riskColumn = window.AppUtils.findColumnName(headers, 'Total Risk');
+        const arrColumn = window.AppUtils.findColumnName(headers, 'ARR');
         
         console.log('UTILS: Column mappings found:', {
             LCSM: lcsmColumn,
@@ -193,8 +185,8 @@ window.AppUtils = {
             const customerName = customerColumn ? (row[customerColumn] || `Customer ${index + 1}`) : `Customer ${index + 1}`;
             const lcsm = lcsmColumn ? (row[lcsmColumn] || 'N/A') : 'N/A';
             
-            const totalRisk = riskColumn ? this.extractNumber(row[riskColumn]) : 0;
-            const arr = arrColumn ? this.extractNumber(row[arrColumn]) : 0;
+            const totalRisk = riskColumn ? window.AppUtils.extractNumber(row[riskColumn]) : 0;
+            const arr = arrColumn ? window.AppUtils.extractNumber(row[arrColumn]) : 0;
             
             const extractedData = {
                 'Customer Name': customerName,
@@ -458,6 +450,7 @@ window.AppUtils = {
     },
 
     SessionManager: {
+        riskHistory: {},
         // Multi-Key Session-Management
         save: function(sessionData) {
             try {
@@ -546,6 +539,55 @@ window.AppUtils = {
             }
             return null;
         }
+    },
+
+    calculateContractRisk: function(contractDate) {
+        if (!contractDate) return 0;
+        const now = new Date();
+        const end = new Date(contractDate);
+        if (isNaN(end)) return 0;
+        const diffDays = (end - now) / (1000 * 60 * 60 * 24);
+        if (diffDays <= 0) return 150;
+        if (diffDays < 90) return 100;
+        if (diffDays < 180) return 50;
+        return 20;
+    },
+
+    buildRiskHistory: function(data) {
+        const history = {};
+        const timestamp = Date.now();
+        data.forEach(row => {
+            const key = window.AppUtils.DataUtils.generateCustomerKey(row);
+            if (!history[key]) history[key] = [];
+            history[key].push({
+                timestamp,
+                'Total Risk': row['Total Risk'] || 0,
+                'Objective Risk': row['Objective Risk'] || 0,
+                'Contact Risk': row['Contact Risk'] || 0,
+                'Contract Risk': row['Contract Risk'] || 0,
+                'ARR': row['ARR'] || 0
+            });
+        });
+        return history;
+    },
+
+    filterRiskDataByType: function(data, type) {
+        const result = {};
+        Object.keys(data).forEach(key => {
+            result[key] = data[key].map(entry => ({
+                timestamp: entry.timestamp,
+                value: entry[type + ' Risk'] || entry[type] || 0,
+                entry
+            }));
+        });
+        return result;
+    },
+
+    exportChartAsPng: function(chart, filename) {
+        const link = document.createElement('a');
+        link.href = chart.toBase64Image();
+        link.download = filename || 'chart.png';
+        link.click();
     },
 
     PrivacyUtils: {
