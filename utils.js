@@ -433,13 +433,16 @@ window.AppUtils = {
                         customer['manager'] ||
                         '';
             
-            const arr = (customer['ARR'] || 
-                        customer['arr'] || 
-                        customer['Revenue'] ||
-                        customer['revenue'] ||
-                        customer['Umsatz'] ||
-                        customer['umsatz'] ||
-                        0).toFixed(2);
+            const arrValue = customer['ARR'] ||
+                             customer['arr'] ||
+                             customer['Revenue'] ||
+                             customer['revenue'] ||
+                             customer['Umsatz'] ||
+                             customer['umsatz'] ||
+                             0;
+
+            const arrNumber = window.AppUtils.extractNumber(arrValue);
+            const arr = Number(arrNumber).toFixed(2);
             
             return `${name}|${lcsm}|${arr}`;
         },
