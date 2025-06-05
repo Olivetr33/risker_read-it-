@@ -621,8 +621,8 @@ function renderSliderTable() {
         
         tableHTML += `
             <tr>
-                <td>${customerName}</td>
-                <td>${lcsm}</td>
+                <td>${AppUtils.escapeHTML(customerName)}</td>
+                <td>${AppUtils.escapeHTML(lcsm)}</td>
                 <td>€${arr.toLocaleString()}</td>
                 <td>${risk.toFixed(1)}</td>
                 <td>
@@ -912,9 +912,10 @@ function renderTable(data) {
                 tableHTML += `<td>€${arr.toLocaleString()}</td>`;
             } else if (col === 'Customer Name') {
                 const customerName = row['Customer Name'] || row['Kunde'] || row['Kundenname'] || row['Customer'] || row['Name'] || 'Unknown';
-                tableHTML += `<td>${customerName}</td>`;
+                tableHTML += `<td>${AppUtils.escapeHTML(customerName)}</td>`;
             } else {
-                tableHTML += `<td>${row[col] || ''}</td>`;
+                const cellValue = row[col] || '';
+                tableHTML += `<td>${AppUtils.escapeHTML(cellValue)}</td>`;
             }
         });
         tableHTML += '</tr>';

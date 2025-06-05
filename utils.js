@@ -48,6 +48,12 @@ function throttle(fn, limit = 300) {
     };
 }
 
+function escapeHTML(str) {
+    const div = document.createElement('div');
+    div.textContent = str == null ? '' : String(str);
+    return div.innerHTML;
+}
+
 // =============================================================================
 // GLOBALER NAMESPACE (OHNE ES6 EXPORTS)
 // =============================================================================
@@ -60,6 +66,8 @@ window.AppUtils = {
         'Total Risk': ['Total Risk', 'total risk', 'TOTAL RISK', 'TotalRisk', 'totalrisk', 'TOTALRISK', 'Risk', 'risk', 'RISK', 'Risiko', 'risiko', 'RISIKO', 'Score', 'score', 'SCORE', 'Risk Score', 'risk score', 'RISK SCORE', 'RiskScore', 'riskscore', 'RISKSCORE'],
         'ARR': ['ARR', 'arr', 'Arr', 'Annual Recurring Revenue', 'annual recurring revenue', 'ANNUAL RECURRING REVENUE', 'Revenue', 'revenue', 'REVENUE', 'Umsatz', 'umsatz', 'UMSATZ', 'Vertragswert', 'vertragswert', 'VERTRAGSWERT', 'Value', 'value', 'VALUE', 'Wert', 'wert', 'WERT', 'Amount', 'amount', 'AMOUNT']
     },
+
+    escapeHTML: escapeHTML,
 
     // KORRIGIERT: IDENTISCHE Spaltenerkennung wie in app.js und riskmap.html
     findColumnName: function(headers, targetColumn) {
