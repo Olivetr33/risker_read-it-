@@ -451,6 +451,7 @@ window.AppUtils = {
 
     SessionManager: {
         riskHistory: {},
+        workflowEntries: {},
         // Multi-Key Session-Management
         save: function(sessionData) {
             try {

@@ -33,6 +33,7 @@
                     <li><button class="sidebar-btn" id="heatmapBtn">📊 RiskMap</button></li>
                     <li><button class="sidebar-btn" id="archiveBtn">📋 Archive</button></li>
                     <li><button class="sidebar-btn" id="kpiDashboardBtn">📈 KPI Dashboard</button></li>
+                    <li><button class="sidebar-btn" id="workflowBtn">🗂 Workflow</button></li>
                 </ul>
             </nav>
             
@@ -78,6 +79,11 @@
             <div class="slider-content" id="sliderContent">
                 <!-- Content wird dynamisch geladen -->
             </div>
+        </div>
+
+        <div id="workflowSidebar" class="sidebar-slider">
+          <h2>Please contact the following Customers soon</h2>
+          <table class="workflow-table"></table>
         </div>
 
         <div id="kpiDashboardContainer" style="display:none;">
@@ -639,6 +645,43 @@
             border-color: rgba(255, 255, 255, 0.6);
             transform: translateY(-2px);
         }
+
+        #kpiDashboardContainer {
+            position: relative;
+            z-index: 10;
+            margin-left: 220px;
+            padding: 20px;
+            background-color: #181a1b;
+            min-height: 100vh;
+        }
+
+        #kpiDashboardContainer .chart-container {
+            width: 100%;
+            max-width: 100%;
+            overflow-x: auto;
+        }
+        #kpiDashboardContainer canvas {
+            width: 100% !important;
+            height: auto !important;
+        }
+
+        .sidebar-slider {
+            position: fixed;
+            top: 0;
+            right: -50vw;
+            width: 50vw;
+            height: 100vh;
+            background: #23272b;
+            overflow-y: auto;
+            z-index: 2100;
+            transition: right 0.5s ease;
+            padding: 20px;
+            box-shadow: -3px 0 10px rgba(0,0,0,0.5);
+        }
+        .sidebar-slider.active { right: 0; }
+        .workflow-table { width: 100%; border-collapse: collapse; color: #fff; }
+        .workflow-table th, .workflow-table td { padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .workflow-add-btn { background: #ffd221; color: #000; border: none; border-radius: 6px; padding: 4px 8px; cursor: pointer; margin-left:4px; }
 
         /* Responsive Design */
         @media (max-width: 768px) {
