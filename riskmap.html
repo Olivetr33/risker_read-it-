@@ -1021,8 +1021,8 @@
                 
                 tableHTML += `
                     <tr>
-                        <td>${customerName}</td>
-                        <td>${lcsm}</td>
+                        <td>${AppUtils.escapeHTML(customerName)}</td>
+                        <td>${AppUtils.escapeHTML(lcsm)}</td>
                         <td>€${arr.toLocaleString()}</td>
                         <td>${risk.toFixed(1)}</td>
                         <td>
