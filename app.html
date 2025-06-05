@@ -6,13 +6,10 @@
     <title>No more Risk! - Risk Management Dashboard</title>
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-
-    <!-- Set logging level (debug/info/warn/error) -->
-    <script>window.LOG_LEVEL = 'info';</script>
-    <!-- Logger utility for controlling output -->
-    <script src="logger.js"></script>
+    
     <!-- Lade utils.js ZUERST, dann app.js -->
     <script src="utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="app.js"></script>
 </head>
 <body>
@@ -35,6 +32,7 @@
                     <li><button class="sidebar-btn" id="uploadDataBtn">Upload Data</button></li>
                     <li><button class="sidebar-btn" id="heatmapBtn">📊 RiskMap</button></li>
                     <li><button class="sidebar-btn" id="archiveBtn">📋 Archive</button></li>
+                    <li><button class="sidebar-btn" id="kpiDashboardBtn">📈 KPI Dashboard</button></li>
                 </ul>
             </nav>
             
@@ -76,10 +74,14 @@
                 <h2 id="sliderTitle">RISKMAP</h2>
                 <button id="closeSliderBtn" class="close-slider-btn">×</button>
             </div>
-            
+
             <div class="slider-content" id="sliderContent">
                 <!-- Content wird dynamisch geladen -->
             </div>
+        </div>
+
+        <div id="kpiDashboardContainer" style="display:none;">
+          <!-- Charts and filters will be injected here -->
         </div>
     </div>
 
@@ -87,6 +89,14 @@
     <div class="footer-transparent" id="footerTransparent">
         <div class="footer-content-transparent">
             <a href="https://github.com/Olivetr33/No-More-Risk-" target="_blank" rel="noopener" class="github-link">GitHub</a>
+            <button class="faq-footer-btn" id="faqBtn">❓ FAQ</button>
+        </div>
+    </div>
+
+    <div id="faqPopupBg" class="popup-bg" style="display:none;">
+        <div class="popup" id="faqPopup">
+            <button class="popup-close" onclick="hideFaqModal()" title="Close" aria-label="Close popup">×</button>
+            <div id="faqPopupInner"></div>
         </div>
     </div>
 
