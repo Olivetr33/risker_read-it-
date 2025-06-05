@@ -169,10 +169,10 @@ window.AppUtils = {
         console.log('=== UTILS: Extracting customer data with ultra-robust number conversion ===');
         console.log('UTILS: Available headers:', headers);
         
-        const lcsmColumn = this.findColumnName(headers, 'LCSM');
-        const customerColumn = this.findColumnName(headers, 'Customer Name');
-        const riskColumn = this.findColumnName(headers, 'Total Risk');
-        const arrColumn = this.findColumnName(headers, 'ARR');
+        const lcsmColumn = window.AppUtils.findColumnName(headers, 'LCSM');
+        const customerColumn = window.AppUtils.findColumnName(headers, 'Customer Name');
+        const riskColumn = window.AppUtils.findColumnName(headers, 'Total Risk');
+        const arrColumn = window.AppUtils.findColumnName(headers, 'ARR');
         
         console.log('UTILS: Column mappings found:', {
             LCSM: lcsmColumn,
@@ -185,8 +185,8 @@ window.AppUtils = {
             const customerName = customerColumn ? (row[customerColumn] || `Customer ${index + 1}`) : `Customer ${index + 1}`;
             const lcsm = lcsmColumn ? (row[lcsmColumn] || 'N/A') : 'N/A';
             
-            const totalRisk = riskColumn ? this.extractNumber(row[riskColumn]) : 0;
-            const arr = arrColumn ? this.extractNumber(row[arrColumn]) : 0;
+            const totalRisk = riskColumn ? window.AppUtils.extractNumber(row[riskColumn]) : 0;
+            const arr = arrColumn ? window.AppUtils.extractNumber(row[arrColumn]) : 0;
             
             const extractedData = {
                 'Customer Name': customerName,
