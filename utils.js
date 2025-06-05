@@ -450,6 +450,7 @@ window.AppUtils = {
     },
 
     SessionManager: {
+        riskHistory: {},
         // Multi-Key Session-Management
         save: function(sessionData) {
             try {
@@ -538,6 +539,55 @@ window.AppUtils = {
             }
             return null;
         }
+    },
+
+    calculateContractRisk: function(contractDate) {
+        if (!contractDate) return 0;
+        const now = new Date();
+        const end = new Date(contractDate);
+        if (isNaN(end)) return 0;
+        const diffDays = (end - now) / (1000 * 60 * 60 * 24);
+        if (diffDays <= 0) return 150;
+        if (diffDays < 90) return 100;
+        if (diffDays < 180) return 50;
+        return 20;
+    },
+
+    buildRiskHistory: function(data) {
+        const history = {};
+        const timestamp = Date.now();
+        data.forEach(row => {
+            const key = window.AppUtils.DataUtils.generateCustomerKey(row);
+            if (!history[key]) history[key] = [];
+            history[key].push({
+                timestamp,
+                'Total Risk': row['Total Risk'] || 0,
+                'Objective Risk': row['Objective Risk'] || 0,
+                'Contact Risk': row['Contact Risk'] || 0,
+                'Contract Risk': row['Contract Risk'] || 0,
+                'ARR': row['ARR'] || 0
+            });
+        });
+        return history;
+    },
+
+    filterRiskDataByType: function(data, type) {
+        const result = {};
+        Object.keys(data).forEach(key => {
+            result[key] = data[key].map(entry => ({
+                timestamp: entry.timestamp,
+                value: entry[type + ' Risk'] || entry[type] || 0,
+                entry
+            }));
+        });
+        return result;
+    },
+
+    exportChartAsPng: function(chart, filename) {
+        const link = document.createElement('a');
+        link.href = chart.toBase64Image();
+        link.download = filename || 'chart.png';
+        link.click();
     },
 
     PrivacyUtils: {
