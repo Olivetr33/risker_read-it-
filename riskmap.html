@@ -659,6 +659,11 @@
             box-shadow: 0 4px 32px rgba(0,0,0,0.3);
         }
 
+        .riskmap-popup-inner {
+            width: calc((100vw - 250px) / 2);
+            max-width: calc((100vw - 250px) / 2);
+        }
+
         .radar-details-table {
             width: 100%;
             border-collapse: collapse;
@@ -947,7 +952,7 @@
                             <button onclick="markAsDoneRiskmap(${index})" style="
                                 padding: 6px 12px; background: #4CAF50; color: white;
                                 border: none; border-radius: 6px; cursor: pointer; font-size: 12px;
-                            ">Mark Done</button>
+                            ">Archive</button>
                         </td>
                     </tr>
                 `;
@@ -957,7 +962,7 @@
             console.log('RiskMap: Table rendered successfully with', sortedData.length, 'rows');
         }
 
-        // Mark Done mit verbesserter Session-Synchronisation
+        // Archive mit verbesserter Session-Synchronisation
         function markAsDoneRiskmap(customerIndex) {
             try {
                 console.log('=== RiskMap Mark as Done Started ===');
@@ -1191,8 +1196,8 @@
                             </div>
                         </div>`;
             html += '<table class="radar-details-table"><tbody>';
-            if (name !== null) html += `<tr><td>Customer Name</td><td>${name}</td></tr>`;
-            if (number !== null) html += `<tr><td>Customer Number</td><td>${number}</td></tr>`;
+            if (name !== null) html += `<tr><td>Customer Name</td><td>${name} <button class="copy-btn" onclick="navigator.clipboard.writeText(this.dataset.val)" data-val="${name.replace(/"/g,'&quot;')}">📋</button></td></tr>`;
+            if (number !== null) html += `<tr><td>Customer Number</td><td>${number} <button class="copy-btn" onclick="navigator.clipboard.writeText(this.dataset.val)" data-val="${String(number).replace(/"/g,'&quot;')}">📋</button></td></tr>`;
             if (lcsm !== null) html += `<tr><td>LCSM</td><td>${lcsm}</td></tr>`;
             if (arrVal !== null) html += `<tr><td>ARR</td><td>€${parseFloat(arrVal).toLocaleString()}</td></tr>`;
             if (!isNaN(totalRisk)) html += `<tr><td>Total Risk</td><td>${totalRisk.toFixed(1)}</td></tr>`;
@@ -1201,25 +1206,23 @@
             if (renewal) html += `<tr><td>Contract Renewal Date</td><td>${renewal}</td></tr>`;
             html += '</tbody></table>';
 
+            const objRiskVal = parseFloat(getField(row, ['Objective Risk']));
+            const contactRiskVal = parseFloat(getField(row, ['Contact Risk']));
             const recs = [];
-            if (renewal) {
-                const d = new Date(renewal);
-                if (!isNaN(d) && (d - new Date()) / 86400000 <= 90 && (d - new Date()) >= 0) {
-                    recs.push('Please Contact Customer due to Business Check Iteration');
+            if (!isNaN(objRiskVal) && objRiskVal > 3) {
+                recs.push('Review product usage');
+            }
+            if (!isNaN(contactRiskVal)) {
+                const midpoint = 5;
+                if (contactRiskVal > midpoint) {
+                    recs.push('Last contact is outdated. May re-engage customer.');
                 }
             }
-            if (lastSuccess) {
-                const d = new Date(lastSuccess);
-                if (!isNaN(d) && (Date.now() - d.getTime()) / 86400000 > 30) {
-                    recs.push('Please Check Customer Product Usage in CRM');
-                }
-            }
+            let recText = 'Not enough details available in the table.';
             if (recs.length > 0) {
-                const recText = recs.join('\n');
-                html += `<div class="radar-recs"><ul>` +
-                    recs.map(r => `<li>${r}</li>`).join('') +
-                    `</ul><button onclick="navigator.clipboard.writeText(this.dataset.text)" data-text="${recText.replace(/"/g, '&quot;')}">Copy</button></div>`;
+                recText = recs.join('<br>');
             }
+            html += `<div class="radar-recs"><strong>Recommendations</strong><div>${recText}</div></div>`;
             return html;
         }
 

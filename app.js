@@ -747,9 +747,9 @@ function renderTable(data) {
                 } else {
                     tableHTML += `<td>
                         <button onclick="markAsDone(${index})" style="
-                            padding: 6px 12px; background: #4CAF50; 
+                            padding: 6px 12px; background: #4CAF50;
                             color: white; border: none; border-radius: 6px; cursor: pointer;
-                        ">Mark Done</button>
+                        ">Archive</button>
                     </td>`;
                 }
             } else if (col === 'ARR') {
