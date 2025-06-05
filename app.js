@@ -285,7 +285,10 @@ window.goToStart = function() {
     if (sliderOpen) {
         closeSlider();
     }
-    
+
+    const kpiContainer = document.getElementById('kpiDashboardContainer');
+    if (kpiContainer) kpiContainer.style.display = 'none';
+
     archiveMode = false;
     const archiveBar = document.getElementById('archiveUploadBar');
     if (archiveBar) {
@@ -310,7 +313,10 @@ window.showArchive = function() {
     if (sliderOpen) {
         closeSlider();
     }
-    
+
+    const kpiContainer = document.getElementById('kpiDashboardContainer');
+    if (kpiContainer) kpiContainer.style.display = 'none';
+
     sliderMode = 'archive';
     openSlider();
     console.log('Archive function executed');
@@ -318,6 +324,9 @@ window.showArchive = function() {
 
 window.openHeatmap = function() {
     console.log('RiskMap toggle function called - checking state');
+
+    const kpiContainer = document.getElementById('kpiDashboardContainer');
+    if (kpiContainer) kpiContainer.style.display = 'none';
     
     const currentUrl = window.location.href;
     
@@ -1046,6 +1055,141 @@ function checkUrlParameters() {
     }
 }
 
+function showKpiDashboard() {
+    if (sliderOpen) closeSlider();
+
+    const tableContainer = document.getElementById('tableContainer');
+    if (tableContainer) tableContainer.style.display = 'none';
+
+    const kpiContainer = document.getElementById('kpiDashboardContainer');
+    if (kpiContainer) {
+        kpiContainer.style.display = 'block';
+        renderKpiDashboard();
+    }
+}
+
+function renderKpiDashboard() {
+    const container = document.getElementById('kpiDashboardContainer');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const card = document.createElement('div');
+    card.className = 'kpi-dashboard-card';
+
+    const controls = document.createElement('div');
+    const metricSelect = document.createElement('select');
+    metricSelect.id = 'metricSelect';
+    ['ARR','Total Risk','Objective Risk','Contact Risk','Contract Risk'].forEach(m => {
+        const opt = document.createElement('option');
+        opt.value = m;
+        opt.textContent = m;
+        metricSelect.appendChild(opt);
+    });
+
+    const sortAsc = document.createElement('button');
+    sortAsc.textContent = 'Sort ↑';
+    const sortDesc = document.createElement('button');
+    sortDesc.textContent = 'Sort ↓';
+    const exportBtn = document.createElement('button');
+    exportBtn.textContent = '📤 Get Graphic';
+    exportBtn.className = 'dashboard-export-btn';
+    const toggleHistory = document.createElement('label');
+    toggleHistory.innerHTML = '<input type="checkbox" id="toggleRiskHistory"> Show Risk History';
+
+    controls.appendChild(metricSelect);
+    controls.appendChild(sortAsc);
+    controls.appendChild(sortDesc);
+    controls.appendChild(exportBtn);
+    controls.appendChild(toggleHistory);
+    card.appendChild(controls);
+
+    const chartWrap = document.createElement('div');
+    chartWrap.className = 'chart-container';
+    chartWrap.innerHTML = '<canvas id="kpiChart"></canvas>';
+    card.appendChild(chartWrap);
+
+    const historyWrap = document.createElement('div');
+    historyWrap.id = 'riskHistoryChartContainer';
+    historyWrap.className = 'chart-container';
+    historyWrap.style.display = 'none';
+    historyWrap.innerHTML = '<select id="riskTypeSelect"><option value="Total">Total Risk</option><option value="Objective">Objective Risk</option><option value="Contact">Contact Risk</option><option value="Contract">Contract Risk</option></select> <select id="riskLevelSelect"><option value="all">All</option><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select><canvas id="riskHistoryChart"></canvas>';
+    card.appendChild(historyWrap);
+
+    container.appendChild(card);
+
+    let chart;
+    function updateChart() {
+        const metric = metricSelect.value;
+        const labels = aggregatedData.map(r => r['Customer Name']);
+        const data = aggregatedData.map(r => parseFloat(r[metric]) || 0);
+        if (chart) chart.destroy();
+        chart = new Chart(document.getElementById('kpiChart').getContext('2d'), {
+            type: 'bar',
+            data: { labels, datasets:[{ label: metric, data, backgroundColor: '#ffd221' }] },
+            options: { responsive:true, plugins:{legend:{labels:{color:'#f1f1f1'}}}, scales:{x:{ticks:{color:'#f1f1f1'}}, y:{ticks:{color:'#f1f1f1'}}}}
+        });
+    }
+
+    metricSelect.onchange = updateChart;
+    sortAsc.onclick = () => { aggregatedData.sort((a,b)=> (a[metricSelect.value]||0)-(b[metricSelect.value]||0)); updateChart(); };
+    sortDesc.onclick = () => { aggregatedData.sort((a,b)=> (b[metricSelect.value]||0)-(a[metricSelect.value]||0)); updateChart(); };
+    exportBtn.onclick = () => { if(chart) AppUtils.exportChartAsPng(chart,'kpi-chart.png'); };
+    document.getElementById('toggleRiskHistory').onchange = function(){
+        historyWrap.style.display = this.checked ? 'block' : 'none';
+        if(this.checked) renderRiskHistoryChart();
+    };
+
+    updateChart();
+}
+
+function renderRiskHistoryChart() {
+    const historyWrap = document.getElementById('riskHistoryChartContainer');
+    if (!historyWrap) return;
+    const riskType = document.getElementById('riskTypeSelect').value;
+    const riskLevel = document.getElementById('riskLevelSelect').value;
+    const ctx = document.getElementById('riskHistoryChart').getContext('2d');
+    const filtered = AppUtils.filterRiskDataByType(SessionManager.riskHistory, riskType);
+    const datasets = [];
+    Object.keys(filtered).forEach(key => {
+        const points = filtered[key].filter(p => {
+            const lvl = p.value < 50 ? 'low' : p.value > 100 ? 'high' : 'medium';
+            return riskLevel === 'all' || riskLevel === lvl;
+        }).map(p => ({x:new Date(p.timestamp), y:p.value, meta:p.entry}));
+        if(points.length) datasets.push({label:key,data:points,fill:false,borderColor:'#ffd221'});
+    });
+    if (window.riskHistoryChart) window.riskHistoryChart.destroy();
+    window.riskHistoryChart = new Chart(ctx, {type:'line',data:{datasets},options:{responsive:true,plugins:{legend:{labels:{color:'#f1f1f1'}}}, scales:{x:{type:'time',ticks:{color:'#f1f1f1'}}, y:{ticks:{color:'#f1f1f1'}}}}});
+
+    ctx.canvas.onclick = function(evt){
+        const points = window.riskHistoryChart.getElementsAtEventForMode(evt,'nearest',{intersect:true},true);
+        if(points.length){
+            const ds = window.riskHistoryChart.data.datasets[points[0].datasetIndex];
+            const point = ds.data[points[0].index];
+            const info = `<div class='privacy-popup-content'><h3>${ds.label}</h3><p>${riskType} Risk: ${point.y}</p><p>Date: ${new Date(point.x).toLocaleString()}</p></div>`;
+            showPopup(info);
+        }
+    };
+}
+
+function showFaqModal() {
+    const faqHtml = `<div class='privacy-popup-content'><h3>FAQ</h3><p>This dashboard helps visualize risk metrics. Upload data, then open the KPI Dashboard to view charts. Use the risk history toggle to see trends over time.</p></div>`;
+    showPopup(faqHtml);
+}
+
+function showPopup(html){
+    const inner = document.getElementById('faqPopupInner');
+    const bg = document.getElementById('faqPopupBg');
+    if(inner && bg){
+        inner.innerHTML = html;
+        bg.style.display='flex';
+    }
+}
+
+function hideFaqModal(){
+    const bg=document.getElementById('faqPopupBg');
+    if(bg) bg.style.display='none';
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM Content Loaded - Setting up event listeners...');
     
@@ -1141,6 +1285,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.error('Archive button not found!');
             }
 
+            const kpiSuccess = forceButtonClick('kpiDashboardBtn', showKpiDashboard);
+            if (!kpiSuccess) {
+                console.error('KPI Dashboard button not found!');
+            }
+
             const closeSliderBtn = document.getElementById('closeSliderBtn');
             if (closeSliderBtn) {
                 closeSliderBtn.onclick = function() {
@@ -1156,6 +1305,18 @@ document.addEventListener('DOMContentLoaded', function() {
                     if(e.target === this) this.style.display = 'none';
                 });
                 console.log('Dialog background listener added');
+            }
+
+            const faqBtn = document.getElementById('faqBtn');
+            if (faqBtn) {
+                faqBtn.onclick = showFaqModal;
+            }
+
+            const faqBg = document.getElementById('faqPopupBg');
+            if (faqBg) {
+                faqBg.addEventListener('click', function(e){
+                    if(e.target === this) hideFaqModal();
+                });
             }
 
             updateTableVisibility();
