@@ -765,3 +765,9 @@ body {
 .quicknote-has-content { background: orange; }
 .centered-btn { display:block; margin:10px auto; }
 
+.chart-scrollable{max-height:calc(100vh - 200px);overflow-y:auto;}
+.table-row{display:table-row;}
+.table-cell{display:table-cell;}
+.filter-header{}
+.filter-bar{display:flex;gap:15px;flex-wrap:wrap;}
+.note-timestamp{white-space:nowrap;}

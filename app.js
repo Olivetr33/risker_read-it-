@@ -1106,11 +1106,11 @@ function renderKpiDashboard() {
     card.className = 'kpi-dashboard-card';
 
     const controls = document.createElement('div');
-    controls.className = 'slider-filters-static';
+    controls.className = 'slider-filters-static filter-header';
     controls.style.background = 'transparent';
     controls.innerHTML = '<h3>Sort Data</h3>';
     const btnWrap = document.createElement('div');
-    btnWrap.className = 'filter-buttons';
+    btnWrap.className = 'filter-buttons filter-bar';
     const metricSelect = document.createElement('select');
     metricSelect.id = 'metricSelect';
     ['ARR','Total Risk','Objective Risk','Contact Risk','Contract Risk'].forEach(m => {
@@ -1144,7 +1144,8 @@ function renderKpiDashboard() {
     chartArea.className = 'chart-area';
 
     const chartWrap = document.createElement('div');
-    chartWrap.className = 'chart-container';
+    chartWrap.className = 'chart-container chart-scrollable';
+    chartWrap.style.height = Math.max(aggregatedData.length * 32, 300) + 'px';
     chartWrap.innerHTML = '<canvas id="kpiChart"></canvas>';
     chartArea.appendChild(chartWrap);
 
@@ -1164,6 +1165,7 @@ function renderKpiDashboard() {
         const metric = metricSelect.value;
         const labels = aggregatedData.map(r => r['Customer Name']);
         const data = aggregatedData.map(r => parseFloat(r[metric]) || 0);
+        chartWrap.style.height = Math.max(aggregatedData.length * 32, 300) + 'px';
         if (chart) chart.destroy();
         chart = new Chart(document.getElementById('kpiChart').getContext('2d'), {
             type: 'bar',
@@ -1285,12 +1287,28 @@ function openNoteModal(key){
     const allRows = [...filteredData, ...aggregatedData, ...erledigtRows];
     const row = allRows.find(r => DataUtils.generateCustomerKey(r) === key) || {};
     const customerName = row['Customer Name'] || row['Kunde'] || row['Name'] || 'Customer';
-    inner.innerHTML = `<h3>Quick Note</h3>
-        <div style="font-weight:bold;margin-bottom:6px;">${customerName} (${key})</div>
-        <div id="noteEditor" contenteditable="true" style="min-height:100px;border:1px solid #555;padding:10px;border-radius:6px;">${note.text || ''}</div>
-        <div id="noteTimestamp" style="margin-top:6px;font-size:12px;color:#ccc;">${note.timestamp? '🕒 Last updated: '+new Date(note.timestamp).toLocaleString() : ''}</div>
-        <button class="table-action-btn" id="saveNoteBtn">Save</button>
-        <button class="table-action-btn" id="closeNoteBtn">Close</button>`;
+    const user = row['LCSM'] || 'User';
+    const tsText = note.timestamp ? new Date(note.timestamp).toISOString().slice(0,16).replace('T',' ') : '';
+    inner.innerHTML = `
+        <div class="slider-header filter-header">
+            <h2 class="section-title">Quick Note</h2>
+            <button class="close-slider-btn" id="closeNoteBtn">×</button>
+        </div>
+        <div class="slider-content">
+            <table class="data-table">
+                <thead><tr><th>Date</th><th>User</th><th>Note</th></tr></thead>
+                <tbody>
+                    <tr class="table-row">
+                        <td class="table-cell"><span class="note-timestamp">${tsText ? '🕒 '+tsText : ''}</span></td>
+                        <td class="table-cell">${user}</td>
+                        <td class="table-cell"><div id="noteEditor" contenteditable="true" style="min-height:100px;border:1px solid #555;padding:10px;border-radius:6px;">${note.text || ''}</div></td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="filter-bar" style="margin-top:10px;">
+                <button class="table-action-btn" id="saveNoteBtn">Save</button>
+            </div>
+        </div>`;
     bg.style.display = 'flex';
     document.getElementById('saveNoteBtn').onclick = function(){
         const text = document.getElementById('noteEditor').innerHTML;
