@@ -1353,14 +1353,15 @@ function showToast(message){
 }
 
 function openNoteModal(key){
+    closeAllSliders();
     let popup = document.getElementById('quicknotePopup');
     if(!popup){
         popup = document.createElement('div');
         popup.id = 'quicknotePopup';
-        popup.className = 'quicknote-popup quicknote-panel';
+        popup.className = 'quicknote-popup quicknote-panel quicknote-slider-fixed';
         document.body.appendChild(popup);
     } else {
-        popup.className = 'quicknote-popup quicknote-panel';
+        popup.className = 'quicknote-popup quicknote-panel quicknote-slider-fixed';
     }
     const notesRaw = SessionManager.notes && SessionManager.notes[key];
     const notes = Array.isArray(notesRaw) ? notesRaw : (notesRaw ? [notesRaw] : []);
@@ -1374,21 +1375,21 @@ function openNoteModal(key){
             <button class="close-slider-btn" id="closeNoteBtn">×</button>
         </div>
         <div class="slider-content">
-            <table class="data-table">
+            <table class="data-table quick-note-table">
                 <thead><tr><th>Date</th><th>User</th><th>Note</th></tr></thead>
                 <tbody>${notesHtml}
                     <tr class="table-row">
                         <td class="table-cell"></td>
                         <td class="table-cell">${AppUtils.escapeHtml(user)}</td>
-                        <td class="table-cell"><textarea id="noteEditor" class="quicknote-content"></textarea></td>
+                        <td class="table-cell"><textarea id="noteEditor" class="quicknote-content quicknote-textarea"></textarea></td>
                     </tr>
                 </tbody>
             </table>
             <div class="filter-bar" style="margin-top:10px;">
-                <button class="table-action-btn" id="saveNoteBtn">Save</button>
+                <button class="table-action-btn quicknote-save-btn save-button" id="saveNoteBtn">Save</button>
             </div>
         </div>`;
-    popup.style.display = 'block';
+    requestAnimationFrame(()=>{ popup.style.display = 'block'; });
     document.getElementById('saveNoteBtn').onclick = function(){
         const text = document.getElementById('noteEditor').value.trim();
         if(text){
