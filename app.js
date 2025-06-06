@@ -953,7 +953,8 @@ function renderTable(data) {
             return;
         }
         
-        tableHTML += `<tr>`;
+        const rowId = `row-${customerKey.replace(/[^a-zA-Z0-9_-]/g, '')}`;
+        tableHTML += `<tr id="${rowId}" data-id="${customerKey}">`;
         
         displayColumns.forEach(col => {
             if (col === 'Actions') {
@@ -1049,18 +1050,20 @@ window.markAsDone = function(index) {
             aggregatedData[aggregatedIndex].archived = true;
             aggregatedData[aggregatedIndex].archivedAt = new Date().toISOString();
         }
-        
-        setTimeout(() => {
-            renderTable(DataUtils.getActiveCustomers(filteredData));
-            
-            if (sliderOpen) {
-                updateSliderData();
-            }
-            
-            saveSession();
-        }, 0);
 
-        showToast('Customer archived successfully.');
+        const rowElement = document.getElementById(`row-${customerKey.replace(/[^a-zA-Z0-9_-]/g, '')}`);
+        if (rowElement) {
+            const btn = rowElement.querySelector('.table-action-btn');
+            if (btn) btn.disabled = true;
+        }
+
+        requestAnimationFrame(() => {
+            if (rowElement) rowElement.remove();
+            if (sliderOpen) updateSliderData();
+            saveSession();
+            updateTableVisibility();
+            showToast('Customer archived successfully.');
+        });
         
         DebugLogger.add('info', `Customer marked as done: ${customerName}`);
         
@@ -1376,67 +1379,75 @@ function showToast(message){
     },2500);
 }
 
-function openNoteModal(key){
-    let popup = document.getElementById('quickNoteSlider');
-    if(!popup){
-        popup = document.createElement('div');
-        popup.id = 'quickNoteSlider';
-        popup.className = 'quicknote-popup slider-panel quicknote-panel quicknote-slider-fixed quicknote-overlay';
-        document.body.appendChild(popup);
-    } else {
-        popup.className = 'quicknote-popup slider-panel quicknote-panel quicknote-slider-fixed quicknote-overlay';
-    }
-    const notesRaw = SessionManager.notes && SessionManager.notes[key];
-    const notes = Array.isArray(notesRaw) ? notesRaw : (notesRaw ? [notesRaw] : []);
-    const allRows = [...filteredData, ...aggregatedData, ...erledigtRows];
-    const row = allRows.find(r => DataUtils.generateCustomerKey(r) === key) || {};
-    const user = row['LCSM'] || 'User';
-    const notesHtml = notes.map(n=>`<tr class="table-row"><td class="table-cell"><span class="note-timestamp">🕒 ${new Date(n.timestamp).toISOString().slice(0,16).replace('T',' ')}</span></td><td class="table-cell">${AppUtils.escapeHtml(user)}</td><td class="table-cell note-text-cell">${AppUtils.escapeHtml(n.text)}</td></tr>`).join('');
-    popup.innerHTML = `
-        <div class="slider-header filter-header">
-            <h2 class="section-title">Quick Note</h2>
-            <button class="close-slider-btn" id="closeNoteBtn">×</button>
-        </div>
-        <div class="slider-content quicknote-container">
-            <table class="data-table quick-note-table">
-                <thead><tr><th>Date</th><th>User</th><th>Note</th></tr></thead>
-                <tbody>${notesHtml}
-                    <tr class="table-row">
-                        <td class="table-cell"></td>
-                        <td class="table-cell">${AppUtils.escapeHtml(user)}</td>
-                        <td class="table-cell note-text-cell"><textarea id="noteEditor" class="quicknote-content quicknote-textarea"></textarea></td>
-                    </tr>
-                </tbody>
-            </table>
-            <div class="filter-bar" style="margin-top:10px;">
-                <button class="table-action-btn quicknote-save-btn save-button" id="saveNoteBtn">Save</button>
+function openNoteModal(key) {
+    requestAnimationFrame(() => {
+        let popup = document.getElementById('quickNoteSlider');
+        if (!popup) {
+            popup = document.createElement('div');
+            popup.id = 'quickNoteSlider';
+            popup.className = 'quicknote-popup slider-panel quicknote-panel quicknote-slider-fixed quicknote-overlay';
+            document.body.appendChild(popup);
+        } else {
+            popup.className = 'quicknote-popup slider-panel quicknote-panel quicknote-slider-fixed quicknote-overlay';
+        }
+        const notesRaw = SessionManager.notes && SessionManager.notes[key];
+        const notes = Array.isArray(notesRaw) ? notesRaw : (notesRaw ? [notesRaw] : []);
+        const allRows = [...filteredData, ...aggregatedData, ...erledigtRows];
+        const row = allRows.find(r => DataUtils.generateCustomerKey(r) === key) || {};
+        const user = row['LCSM'] || 'User';
+        const notesHtml = notes.map(n => {
+            const d = new Date(n.timestamp);
+            const date = d.toISOString().slice(0, 10);
+            const time = d.toISOString().slice(11, 16);
+            return `<tr class="table-row"><td class="note-date"><div class="date-wrapper"><span class="date">${date}</span><br /><span class="time">${time}</span></div></td><td class="table-cell">${AppUtils.escapeHtml(user)}</td><td class="table-cell note-text-cell">${AppUtils.escapeHtml(n.text)}</td></tr>`;
+        }).join('');
+        popup.innerHTML = `
+            <div class="slider-header filter-header">
+                <h2 class="section-title">Quick Note</h2>
+                <button class="close-slider-btn" id="closeNoteBtn">×</button>
             </div>
-        </div>`;
-    requestAnimationFrame(()=>{ popup.style.display = 'block'; });
-    const outsideClick = function(e){
-        if(!popup.contains(e.target)){
+            <div class="slider-content quicknote-container">
+                <table class="data-table quick-note-table">
+                    <thead><tr><th>Date</th><th>User</th><th>Note</th></tr></thead>
+                    <tbody>${notesHtml}
+                        <tr class="table-row">
+                            <td class="table-cell"></td>
+                            <td class="table-cell">${AppUtils.escapeHtml(user)}</td>
+                            <td class="table-cell note-text-cell"><textarea id="noteEditor" class="quicknote-content quicknote-textarea"></textarea></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="filter-bar" style="margin-top:10px;">
+                    <button class="table-action-btn quicknote-save-btn save-button" id="saveNoteBtn">Save</button>
+                </div>
+            </div>`;
+        requestAnimationFrame(() => { popup.style.display = 'block'; });
+        const outsideClick = function(e) {
+            if (!popup.contains(e.target)) {
+                popup.style.display = 'none';
+                document.removeEventListener('click', outsideClick);
+            }
+        };
+        document.addEventListener('click', outsideClick);
+
+        document.getElementById('saveNoteBtn').onclick = debounce(function() {
+            const text = document.getElementById('noteEditor').value.trim();
+            if (text) {
+                if (!Array.isArray(SessionManager.notes[key])) SessionManager.notes[key] = [];
+                SessionManager.notes[key].push({ text, timestamp: Date.now() });
+                saveSession();
+                const btn = document.querySelector(`.quicknote-btn[data-customer="${key}"]`);
+                if (btn) btn.classList.add('quicknote-has-content');
+            }
             popup.style.display = 'none';
             document.removeEventListener('click', outsideClick);
-        }
-    };
-    document.addEventListener('click', outsideClick);
-
-    document.getElementById('saveNoteBtn').onclick = debounce(function(){
-        const text = document.getElementById('noteEditor').value.trim();
-        if(text){
-            if(!Array.isArray(SessionManager.notes[key])) SessionManager.notes[key] = [];
-            SessionManager.notes[key].push({text, timestamp: Date.now()});
-            saveSession();
-        }
-        popup.style.display = 'none';
-        document.removeEventListener('click', outsideClick);
-        if(typeof updateRiskmapDisplay==='function') updateRiskmapDisplay();
-        renderTable(archiveMode ? erledigtRows : DataUtils.getActiveCustomers(filteredData));
-    }, 300);
-    document.getElementById('closeNoteBtn').onclick = function(){
-        popup.style.display='none';
-        document.removeEventListener('click', outsideClick);
-    };
+            if (typeof updateRiskmapDisplay === 'function') updateRiskmapDisplay();
+        }, 300);
+        document.getElementById('closeNoteBtn').onclick = function() {
+            popup.style.display = 'none';
+            document.removeEventListener('click', outsideClick);
+        };
+    });
 }
 window.openNoteModal = openNoteModal;
 

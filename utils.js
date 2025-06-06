@@ -722,7 +722,7 @@ function handleQuickNoteOpen(e) {
     if (!id) return;
     console.log('\u{1F4CC} Opening QuickNote for:', id);
     if (window.QuickNote && typeof window.QuickNote.render === 'function') {
-        window.QuickNote.render(id);
+        requestAnimationFrame(() => window.QuickNote.render(id));
     }
     const slider = document.getElementById('quickNoteSlider');
     if (slider) slider.classList.add('visible');
