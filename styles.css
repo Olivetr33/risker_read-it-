@@ -808,6 +808,51 @@ body {
   overflow-y:auto;
 }
 .quicknote-content{resize:none;height:180px;overflow-y:auto;}
+
+/* QuickNote slider alignment and style fixes */
+.quicknote-slider-fixed{
+  position:absolute;
+  right:0;
+  top:0;
+  width:420px;
+  background:#1a1a1a;
+  box-shadow:-2px 0 10px rgba(255,210,33,0.2);
+  border-left:1px solid rgba(255,255,255,0.1);
+  border-radius:0 12px 12px 0;
+  z-index:200;
+}
+.quicknote-textarea{
+  background-color:#2a2a2a;
+  color:#fff;
+  border:1px solid rgba(255,255,255,0.1);
+  border-radius:6px;
+  padding:8px;
+  resize:vertical;
+}
+.quick-note-table{
+  width:100%;
+  border-spacing:0 6px;
+  font-size:0.9rem;
+  table-layout:fixed;
+}
+.quick-note-table th{
+  color:#ffd221;
+  font-weight:600;
+  padding-bottom:6px;
+}
+.quick-note-table td{
+  padding:4px 8px;
+  vertical-align:top;
+}
+.quicknote-save-btn{
+  margin-top:12px;
+  float:right;
+  background-color:#28a745;
+  color:white;
+  border-radius:4px;
+  padding:6px 12px;
+  font-weight:bold;
+}
 .debug-btn{margin-left:auto;}
 .footer-button-group {
   display: flex;
