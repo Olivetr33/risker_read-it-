@@ -119,6 +119,12 @@
     <div class="footer-transparent" id="footerTransparent">
         <div class="footer-content-transparent">
             <a href="https://github.com/Olivetr33/No-More-Risk-" target="_blank" rel="noopener" class="github-link">GitHub</a>
+            <select id="logLevelSelect" class="log-level-select">
+                <option value="debug">Debug</option>
+                <option value="info">Info</option>
+                <option value="warn">Warn</option>
+                <option value="error">Error</option>
+            </select>
         </div>
     </div>
 
@@ -933,6 +939,12 @@
         // Daten-Loading mit flexibler Spaltenerkennung
         function loadRiskmapData() {
             console.log('=== RiskMap Data Loading Started ===');
+
+            if (typeof localStorage === 'undefined') {
+                console.warn('RiskMap: localStorage not available');
+                showNoDataMessage();
+                return;
+            }
             
             try {
                 const allKeys = ['riskerSessionData', 'sessionData', 'appData'];
@@ -1013,10 +1025,13 @@
                     </tr>
                 `;
             }
-            
-            document.getElementById('totalCustomers').textContent = '0';
-            document.getElementById('highRiskCustomers').textContent = '0';
-            document.getElementById('totalARR').textContent = '€0';
+
+            const totalCustomersEl = document.getElementById('totalCustomers');
+            if (totalCustomersEl) totalCustomersEl.textContent = '0';
+            const highRiskCustomersEl = document.getElementById('highRiskCustomers');
+            if (highRiskCustomersEl) highRiskCustomersEl.textContent = '0';
+            const totalARRel = document.getElementById('totalARR');
+            if (totalARRel) totalARRel.textContent = '€0';
         }
 
         function updateRiskmapDisplay() {
@@ -1109,8 +1124,8 @@
                 
                 tableHTML += `
                     <tr>
-                        <td>${customerName}</td>
-                        <td>${lcsm}</td>
+                        <td>${AppUtils.escapeHtml(customerName)}</td>
+                        <td>${AppUtils.escapeHtml(lcsm)}</td>
                         <td>€${arr.toLocaleString()}</td>
                         <td>${risk.toFixed(1)}</td>
                         <td>
@@ -1351,14 +1366,14 @@
                             </div>
                         </div>`;
             html += '<table class="radar-details-table"><tbody>';
-            if (name !== null) html += `<tr><td>Customer Name</td><td>${name}</td></tr>`;
-            if (number !== null) html += `<tr><td>Customer Number</td><td>${number}</td></tr>`;
-            if (lcsm !== null) html += `<tr><td>LCSM</td><td>${lcsm}</td></tr>`;
+            if (name !== null) html += `<tr><td>Customer Name</td><td>${AppUtils.escapeHtml(name)}</td></tr>`;
+            if (number !== null) html += `<tr><td>Customer Number</td><td>${AppUtils.escapeHtml(number)}</td></tr>`;
+            if (lcsm !== null) html += `<tr><td>LCSM</td><td>${AppUtils.escapeHtml(lcsm)}</td></tr>`;
             if (arrVal !== null) html += `<tr><td>ARR</td><td>€${parseFloat(arrVal).toLocaleString()}</td></tr>`;
             if (!isNaN(totalRisk)) html += `<tr><td>Total Risk</td><td>${totalRisk.toFixed(1)}</td></tr>`;
-            if (lastContact) html += `<tr><td>Last Contact</td><td>${lastContact}</td></tr>`;
-            if (lastSuccess) html += `<tr><td>Last Success Check</td><td>${lastSuccess}</td></tr>`;
-            if (renewal) html += `<tr><td>Contract Renewal Date</td><td>${renewal}</td></tr>`;
+            if (lastContact) html += `<tr><td>Last Contact</td><td>${AppUtils.escapeHtml(lastContact)}</td></tr>`;
+            if (lastSuccess) html += `<tr><td>Last Success Check</td><td>${AppUtils.escapeHtml(lastSuccess)}</td></tr>`;
+            if (renewal) html += `<tr><td>Contract Renewal Date</td><td>${AppUtils.escapeHtml(renewal)}</td></tr>`;
             html += '</tbody></table>';
 
             const recs = [];
@@ -1563,9 +1578,6 @@
             console.log('=== RiskMap DOM Ready ===');
             
             loadRiskmapData();
-            setTimeout(loadRiskmapData, 500);
-            setTimeout(loadRiskmapData, 1000);
-            setTimeout(loadRiskmapData, 2000);
             
             const fileInput = document.getElementById('fileInput');
             if (fileInput) {
@@ -1596,6 +1608,14 @@
             }
             const closeRadarBtn = document.getElementById('closeRadarBtn');
             if (closeRadarBtn) closeRadarBtn.onclick = hideRadarPopup;
+
+            const logSelect = document.getElementById('logLevelSelect');
+            if (logSelect && window.Logger) {
+                logSelect.value = Logger.getLevel();
+                logSelect.addEventListener('change', function(){
+                    Logger.saveLevel(this.value);
+                });
+            }
 
             setTimeout(updateSortButtons, 500);
             setTimeout(updateSortButtons, 1000);

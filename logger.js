@@ -7,7 +7,14 @@
     };
 
     const levels = { debug: 0, info: 1, warn: 2, error: 3, none: 4 };
-    let currentLevel = levels[(global.LOG_LEVEL || 'info').toLowerCase()] || levels.info;
+
+    function loadLevel() {
+        const stored = global.localStorage ? localStorage.getItem('logLevel') : null;
+        const levelName = (stored || global.LOG_LEVEL || 'info').toLowerCase();
+        return levels[levelName] !== undefined ? levels[levelName] : levels.info;
+    }
+
+    let currentLevel = loadLevel();
 
     function setLevel(level){
         if (typeof level === 'string') level = levels[level.toLowerCase()];
@@ -15,9 +22,27 @@
         currentLevel = level;
     }
 
+    function saveLevel(levelName){
+        if(typeof levelName === 'string'){
+            if(global.localStorage){
+                localStorage.setItem('logLevel', levelName.toLowerCase());
+            }
+            setLevel(levelName);
+        }
+    }
+
+    function getLevel(){
+        for(const key in levels){
+            if(levels[key] === currentLevel) return key;
+        }
+        return 'info';
+    }
+
     const logger = {
         levels,
         setLevel,
+        saveLevel,
+        getLevel,
         debug: (...args) => { if (currentLevel <= levels.debug) origConsole.log(...args); },
         info: (...args) => { if (currentLevel <= levels.info) origConsole.info(...args); },
         warn: (...args) => { if (currentLevel <= levels.warn) origConsole.warn(...args); },

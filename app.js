@@ -1,6 +1,6 @@
 // app.js - KORRIGIERT: Synchrone ultra-robuste Zahlenextraktion
 
-const { DebugLogger, AutoSave, DataUtils, SessionManager, FileInputUtils, PrivacyUtils } = window.AppUtils;
+const { DebugLogger, AutoSave, DataUtils, SessionManager, FileInputUtils, PrivacyUtils, escapeHtml } = window.AppUtils;
 
 let excelData = [];
 let headers = [];
@@ -374,6 +374,11 @@ window.triggerUpload = function() {
 };
 
 window.performLogout = function() {
+    if (!confirm('Clear all data?')) {
+        console.log('Logout cancelled by user');
+        return;
+    }
+
     console.log('=== VOLLSTÄNDIGER Logout & Session Clear gestartet ===');
     
     try {
@@ -634,8 +639,8 @@ function renderSliderTable() {
         
         tableHTML += `
             <tr>
-                <td>${customerName}</td>
-                <td>${lcsm}</td>
+                <td>${escapeHtml(customerName)}</td>
+                <td>${escapeHtml(lcsm)}</td>
                 <td>€${arr.toLocaleString()}</td>
                 <td>${risk.toFixed(1)}</td>
                 <td>
@@ -932,9 +937,9 @@ function renderTable(data) {
                 tableHTML += `<td>€${arr.toLocaleString()}</td>`;
             } else if (col === 'Customer Name') {
                 const customerName = row['Customer Name'] || row['Kunde'] || row['Kundenname'] || row['Customer'] || row['Name'] || 'Unknown';
-                tableHTML += `<td>${customerName}</td>`;
+                tableHTML += `<td>${escapeHtml(customerName)}</td>`;
             } else {
-                tableHTML += `<td>${row[col] || ''}</td>`;
+                tableHTML += `<td>${escapeHtml(row[col] || '')}</td>`;
             }
         });
         tableHTML += '</tr>';
@@ -1574,6 +1579,14 @@ document.addEventListener('DOMContentLoaded', function() {
             if (faqBg) {
                 faqBg.addEventListener('click', function(e){
                     if(e.target === this) hideFaqModal();
+                });
+            }
+
+            const logSelect = document.getElementById('logLevelSelect');
+            if (logSelect && window.Logger) {
+                logSelect.value = Logger.getLevel();
+                logSelect.addEventListener('change', function(){
+                    Logger.saveLevel(this.value);
                 });
             }
 

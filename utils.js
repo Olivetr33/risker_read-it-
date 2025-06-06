@@ -48,6 +48,19 @@ function throttle(fn, limit = 300) {
     };
 }
 
+// Simple HTML escaping to prevent XSS when injecting dynamic values
+function escapeHtml(str) {
+    if (str === undefined || str === null) return '';
+    const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+    };
+    return String(str).replace(/[&<>"']/g, m => map[m]);
+}
+
 // =============================================================================
 // GLOBALER NAMESPACE (OHNE ES6 EXPORTS)
 // =============================================================================
@@ -60,6 +73,9 @@ window.AppUtils = {
         'Total Risk': ['Total Risk', 'total risk', 'TOTAL RISK', 'TotalRisk', 'totalrisk', 'TOTALRISK', 'Risk', 'risk', 'RISK', 'Risiko', 'risiko', 'RISIKO', 'Score', 'score', 'SCORE', 'Risk Score', 'risk score', 'RISK SCORE', 'RiskScore', 'riskscore', 'RISKSCORE'],
         'ARR': ['ARR', 'arr', 'Arr', 'Annual Recurring Revenue', 'annual recurring revenue', 'ANNUAL RECURRING REVENUE', 'Revenue', 'revenue', 'REVENUE', 'Umsatz', 'umsatz', 'UMSATZ', 'Vertragswert', 'vertragswert', 'VERTRAGSWERT', 'Value', 'value', 'VALUE', 'Wert', 'wert', 'WERT', 'Amount', 'amount', 'AMOUNT']
     },
+
+    // HTML escaping utility
+    escapeHtml: escapeHtml,
 
     // KORRIGIERT: IDENTISCHE Spaltenerkennung wie in app.js und riskmap.html
     findColumnName: function(headers, targetColumn) {
