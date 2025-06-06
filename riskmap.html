@@ -25,17 +25,24 @@
         <div class="sidebar">
             <nav class="sidebar-nav">
                 <ul>
-                    <li><button class="sidebar-btn sidebar-btn-layout" data-target="goToStart">ShowData</button></li>
-                    <li><button class="sidebar-btn sidebar-btn-layout" data-target="triggerUpload">Upload Data</button></li>
-                    <li><button class="sidebar-btn sidebar-btn-layout active" >RiskMap</button></li>
-                    <li><button class="sidebar-btn sidebar-btn-layout" data-target="showArchive">Archive</button></li>
+                    <li class="upload-dropdown">
+                        <button class="sidebar-btn sidebar-btn-layout" id="uploadDataBtn">Upload Data ▾</button>
+                        <div class="upload-options" id="uploadOptions">
+                            <button data-action="uploadXlsx">Upload XLSX</button>
+                            <button data-action="restoreSession">Restore Session File</button>
+                        </div>
+                    </li>
+                    <li><button class="sidebar-btn sidebar-btn-layout active">RiskMap</button></li>
                     <li><button class="sidebar-btn sidebar-btn-layout" id="kpiDashboardBtn" data-target="showKpiDashboard">KPI Dashboard</button></li>
                     <li><button class="sidebar-btn sidebar-btn-layout" id="workflowBtn" data-target="toggleWorkflow">Workflow</button></li>
                 </ul>
             </nav>
-            
+
             <div class="sidebar-footer">
-                <button class="sidebar-btn sidebar-btn-layout" data-target="saveCurrentSession">Save Session</button>
+                <div class="sidebar-group">
+                    <button class="sidebar-btn sidebar-btn-layout" data-target="saveCurrentSession">Save Session</button>
+                    <button class="sidebar-btn sidebar-btn-layout" data-target="showArchive" id="openArchiveBtn">Archive</button>
+                </div>
                 <button class="sidebar-btn sidebar-btn-layout logout-btn footer-btn" data-target="performLogout">
                     Logout & Clear Session
                 </button>
@@ -51,7 +58,7 @@
         <div id="sliderPanel" class="slider-panel active">
             <div class="slider-header">
                 <h2 id="sliderTitle">RISKMAP</h2>
-                <button onclick="window.location.href='app.html'" class="close-slider-btn">×</button>
+                <button onclick="closeAllSliders()" class="close-slider-btn">×</button>
             </div>
             
             <div class="slider-content" id="sliderContent">
@@ -712,10 +719,32 @@
         const { DataUtils, SessionManager } = window.AppUtils;
         function saveCurrentSession(){
             try{
-                const data = localStorage.getItem('riskerSessionData');
-                if(data) localStorage.setItem('riskerSessionData', data);
-                showToast('Session saved successfully.');
+                const session = SessionManager.restore() || {};
+                const blob = new Blob([JSON.stringify(session)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `risker-session-${Date.now()}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+                showToast('Session file downloaded.');
             }catch(e){console.error(e);}
+        }
+
+        function restoreSessionFile(file){
+            const reader = new FileReader();
+            reader.onload = function(ev){
+                try{
+                    const data = JSON.parse(ev.target.result);
+                    SessionManager.save(data);
+                    riskmapData = (data.filteredData || []).filter(c => !c.erledigt && !c.done && !c.archived);
+                    updateRiskmapDisplay();
+                    showToast('Session restored.');
+                }catch(err){
+                    alert('Invalid session file');
+                }
+            };
+            reader.readAsText(file);
         }
         function showToast(msg){
             const cont = document.getElementById('toastContainer');
@@ -902,13 +931,14 @@
 
         // Globale Funktionen für Sidebar-Buttons
         window.goToStart = function() {
-            console.log('ShowData function called from RiskMap');
-            window.location.href = 'app.html';
+            console.log('ShowData function removed.');
         };
 
         window.showArchive = function() {
-            console.log('Archive function called from RiskMap');
-            window.location.href = 'app.html?openArchive=true';
+            console.log('Displaying archive in RiskMap');
+            const session = SessionManager.restore() || {};
+            riskmapData = (session.archivedRows || []).slice();
+            updateRiskmapDisplay();
         };
 
         window.openHeatmap = function() {
@@ -1564,13 +1594,21 @@
                     })));
                 }
 
+                const existing = SessionManager.restore() || {};
+                const existingKeys = new Set([
+                    ...(existing.filteredData || []),
+                    ...(existing.erledigtRows || []),
+                    ...(existing.archivedRows || [])
+                ].map(r => DataUtils.generateCustomerKey(r)));
+                const uniqueData = extractedData.filter(row => !existingKeys.has(DataUtils.generateCustomerKey(row)));
+                const merged = (existing.filteredData || []).concat(uniqueData);
                 const sessionData = {
-                    excelData: rawData,
-                    filteredData: extractedData,
-                    aggregatedData: extractedData,
-                    originalAggregatedData: [...extractedData],
-                    selectedLCSM: null,
-                    erledigtRows: [],
+                    excelData: (existing.excelData || []).concat(rawData),
+                    filteredData: merged,
+                    aggregatedData: merged,
+                    originalAggregatedData: [...merged],
+                    selectedLCSM: existing.selectedLCSM || null,
+                    erledigtRows: existing.erledigtRows || [],
                     headers: headers,
                     currentSort: { column: '', direction: 'desc' },
                     archiveMode: false,
@@ -1583,7 +1621,7 @@
                     console.log(`RiskMap: Session data saved to key: ${key}`);
                 }
 
-                riskmapData = extractedData.filter(customer => !customer.erledigt);
+                riskmapData = merged.filter(customer => !customer.erledigt && !customer.archived && !customer.done);
                 console.log('RiskMap: Updated local data:', riskmapData.length, 'customers');
 
                 updateRiskmapDisplay();
@@ -1613,6 +1651,30 @@
                     }
                 });
             });
+
+            const uploadBtn = document.getElementById('uploadDataBtn');
+            const uploadOptions = document.getElementById('uploadOptions');
+            if (uploadBtn && uploadOptions) {
+                uploadBtn.addEventListener('click', function(){
+                    uploadOptions.style.display = uploadOptions.style.display === 'flex' ? 'none' : 'flex';
+                });
+                uploadOptions.addEventListener('click', function(e){
+                    const action = e.target.dataset.action;
+                    if (action === 'uploadXlsx') {
+                        window.triggerUpload();
+                    } else if (action === 'restoreSession') {
+                        const input = document.createElement('input');
+                        input.type = 'file';
+                        input.accept = '.riskersession.json';
+                        input.addEventListener('change', function(ev){
+                            const file = ev.target.files[0];
+                            if (file) restoreSessionFile(file);
+                        }, { once: true });
+                        input.click();
+                    }
+                    uploadOptions.style.display = 'none';
+                });
+            }
             
             loadRiskmapData();
             bindQuickNoteButtons();

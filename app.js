@@ -1285,6 +1285,19 @@ function renderKpiDashboard() {
             }
         });
         window.addEventListener('resize', () => chart.resize());
+        chart.canvas.onclick = function(evt){
+            const points = chart.getElementsAtEventForMode(evt, 'nearest', {intersect:true}, true);
+            if(points.length){
+                const idx = points[0].index;
+                const customer = dashboardData[idx];
+                const cid = customer['Customer Number'] || customer['Customer ID'] || customer['Kundennummer'] || '';
+                if(cid){
+                    navigator.clipboard.writeText(cid).then(() => {
+                        showToast(`\uD83D\uDCCB Copied ID: ${cid}`);
+                    });
+                }
+            }
+        };
     }
 
     metricSelect.onchange = () => { currentSort = 'desc'; if(typeof Chart!=='undefined') updateChart(); };
@@ -1458,7 +1471,15 @@ window.QuickNote = QuickNote;
 
 window.saveCurrentSession = function(){
     saveSession();
-    showToast('Session saved successfully.');
+    const data = SessionManager.restore() || {};
+    const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `risker-session-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('Session file downloaded.');
 };
 
 function addWorkflowEntry(row){
