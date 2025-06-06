@@ -453,6 +453,7 @@ window.AppUtils = {
         riskHistory: {},
         workflowEntries: {},
         notes: {},
+        archivedRows: [],
         // Multi-Key Session-Management
         save: function(sessionData) {
             try {
