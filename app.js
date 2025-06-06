@@ -971,13 +971,13 @@ function renderTable(data) {
                 if (archiveMode) {
                     tableHTML += `<td>
                         <button class="table-action-btn remove-btn" onclick="removeFromArchive(${index})">Remove</button>
-                        <button class="table-action-btn note-btn${noteClass}" onclick="openNoteModal('${customerKey}')" title="${preview}">🗒</button>
+                        <button class="table-action-btn note-btn quicknote-btn${noteClass}" data-customer="${customerKey}" title="${preview}">🗒</button>
                     </td>`;
                 } else {
                     tableHTML += `<td>
                         <button class="table-action-btn" onclick="markAsDone(${index})" title="Archive this entry">Archive</button>
                         <button class="table-action-btn" onclick="addCustomerToWorkflow(${index})" title="Add to Workflow">➕ Add to Workflow</button>
-                        <button class="table-action-btn note-btn${noteClass}" onclick="openNoteModal('${customerKey}')" title="${preview}">🗒</button>
+                        <button class="table-action-btn note-btn quicknote-btn${noteClass}" data-customer="${customerKey}" title="${preview}">🗒</button>
                     </td>`;
                 }
             } else if (col === 'ARR') {
@@ -998,6 +998,7 @@ function renderTable(data) {
     tableContainer.style.display = 'block';
     
     console.log(`Rendered table with ${processedCustomers.size} unique customers (${data.length} total rows)`);
+    bindQuickNoteButtons();
 }
 
 window.markAsDone = function(index) {
@@ -1363,10 +1364,10 @@ function showToast(message){
 }
 
 function openNoteModal(key){
-    let popup = document.getElementById('quicknotePopup');
+    let popup = document.getElementById('quickNoteSlider');
     if(!popup){
         popup = document.createElement('div');
-        popup.id = 'quicknotePopup';
+        popup.id = 'quickNoteSlider';
         popup.className = 'quicknote-popup slider-panel quicknote-panel quicknote-slider-fixed quicknote-overlay';
         document.body.appendChild(popup);
     } else {
@@ -1425,6 +1426,29 @@ function openNoteModal(key){
     };
 }
 window.openNoteModal = openNoteModal;
+
+const QuickNote = {
+    render: openNoteModal
+};
+window.QuickNote = QuickNote;
+
+function handleQuickNoteClick(e){
+    const customerId = e.currentTarget.dataset.customer;
+    console.log('🟡 QuickNote button clicked for:', customerId);
+    if(!customerId) return;
+    if(window.QuickNote && typeof QuickNote.render === 'function'){
+        QuickNote.render(customerId);
+    }
+    const slider = document.getElementById('quickNoteSlider');
+    if(slider) slider.classList.add('visible');
+}
+
+function bindQuickNoteButtons(){
+    document.querySelectorAll('.quicknote-btn').forEach(btn=>{
+        btn.removeEventListener('click', handleQuickNoteClick);
+        btn.addEventListener('click', handleQuickNoteClick);
+    });
+}
 
 window.saveCurrentSession = function(){
     saveSession();
@@ -1517,7 +1541,7 @@ function renderWorkflowSidebar(){
             hasNote = true;
         }
         const noteClass = hasNote ? ' quicknote-has-content' : '';
-        html += `<tr><td>${e.name}</td><td>${e.lcsms}</td><td>${e.totalRisk}</td><td>${new Date(e.addedAt).toLocaleDateString()}</td><td><button class="table-action-btn" onclick="completeWorkflow(\'${k}\')">Done</button><button class="table-action-btn note-btn${noteClass}" onclick="openNoteModal('${k}')" title="${preview}">🗒</button></td></tr>`;
+        html += `<tr><td>${e.name}</td><td>${e.lcsms}</td><td>${e.totalRisk}</td><td>${new Date(e.addedAt).toLocaleDateString()}</td><td><button class="table-action-btn" onclick="completeWorkflow(\'${k}\')">Done</button><button class="table-action-btn note-btn quicknote-btn${noteClass}" data-customer="${k}" title="${preview}">🗒</button></td></tr>`;
     });
     table.innerHTML = html;
 }
