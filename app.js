@@ -634,7 +634,7 @@ function renderSliderTable() {
             riskBarWidth = '100%';
         }
         
-        const doneTag = row.tag === 'Done' ? `<span class="done-tag" onclick="removeFromArchiveSlider(${index})">Done</span>` : '';
+        const doneTag = customer.tag === 'Done' ? `<span class="done-tag" onclick="removeFromArchiveSlider(${index})">Done</span>` : '';
         const actionButton = `<button class="table-action-btn remove-btn" onclick="removeFromArchiveSlider(${index})">Remove</button>`;
         
         tableHTML += `
