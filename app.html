@@ -10,7 +10,7 @@
 
     <!-- Lade utils.js ZUERST, dann app.js -->
     <script src="utils.js"></script>
-    <script src="vendor/chart.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="app.js"></script>
 </head>
 <body>
@@ -107,13 +107,14 @@
     <div class="footer-transparent" id="footerTransparent">
         <div class="footer-content-transparent">
             <a href="https://github.com/Olivetr33/No-More-Risk-" target="_blank" rel="noopener" class="github-link">GitHub</a>
-            <button class="faq-footer-btn" id="faqBtn">❓ FAQ</button>
+            <button class="faq-footer-btn" id="faqBtn">FAQ</button>
             <select id="logLevelSelect" class="log-level-select">
                 <option value="debug">Debug</option>
                 <option value="info">Info</option>
                 <option value="warn">Warn</option>
                 <option value="error">Error</option>
             </select>
+            <button class="footer-link debug-btn" id="debugBtn">Debug Log</button>
         </div>
     </div>
 
@@ -719,6 +720,7 @@
         }
         .workflow-table { width: 100%; border-collapse: collapse; color: #fff; }
         .workflow-table th, .workflow-table td { padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .workflow-table td, .workflow-table th { text-align:center; vertical-align:middle; }
         .workflow-content {
             height: calc(100vh - 120px);
             overflow-y: auto;

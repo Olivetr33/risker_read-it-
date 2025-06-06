@@ -788,3 +788,7 @@ body {
 .filter-header{}
 .filter-bar{display:flex;gap:15px;flex-wrap:wrap;}
 .note-timestamp{white-space:nowrap;}
+.quicknote-popup{position:fixed;top:50px;right:20px;width:420px;z-index:2000;}
+.quicknote-content{resize:none;height:180px;overflow-y:auto;}
+.debug-btn{margin-left:auto;}
+.workflow-table td,.workflow-table th{text-align:center;vertical-align:middle;}
