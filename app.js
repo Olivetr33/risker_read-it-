@@ -1284,7 +1284,38 @@ function renderKpiDashboard() {
                 scales:{x:{ticks:{color:'#f1f1f1'}}, y:{ticks:{color:'#f1f1f1'}}}
             }
         });
-        window.addEventListener('resize', () => chart.resize());
+        const overlayFn = () => {
+            const overlay = chartWrap.querySelector('.kpi-bar-overlay');
+            if (overlay) overlay.remove();
+            const ov = document.createElement('div');
+            ov.className = 'kpi-bar-overlay';
+            chartWrap.appendChild(ov);
+            const meta = chart.getDatasetMeta(0);
+            meta.data.forEach((bar, i) => {
+                const props = bar.getProps(['x','y','base','width','height'], true);
+                const left = Math.min(props.base, props.x);
+                const width = Math.abs(props.x - props.base);
+                const top = props.y - props.height / 2;
+                const div = document.createElement('div');
+                div.className = 'kpi-bar';
+                div.dataset.customerId = dashboardData[i]['Customer Number'] || dashboardData[i]['Customer ID'] || dashboardData[i]['Kundennummer'] || '';
+                div.style.left = left + 'px';
+                div.style.top = top + 'px';
+                div.style.width = width + 'px';
+                div.style.height = props.height + 'px';
+                div.addEventListener('click', () => {
+                    const cid = div.dataset.customerId;
+                    if (cid) {
+                        navigator.clipboard.writeText(cid).then(() => {
+                            showToast(`\uD83D\uDCCB Copied ID: ${cid}`);
+                        });
+                    }
+                });
+                ov.appendChild(div);
+            });
+        };
+        window.addEventListener('resize', () => { chart.resize(); overlayFn(); });
+        setTimeout(overlayFn, 0);
         chart.canvas.onclick = function(evt){
             const points = chart.getElementsAtEventForMode(evt, 'nearest', {intersect:true}, true);
             if(points.length){

@@ -37,8 +37,7 @@
 ## Project structure
 
 - `index.html` – start screen
-- `app.html` – main dashboard
-- `riskmap.html` – risk map view
+- `riskmap.html` – main dashboard
 - `app.js` / `utils.js` – application logic
 - `styles.css` – styling
 - `background.mp4` – optional background video

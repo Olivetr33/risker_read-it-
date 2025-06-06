@@ -993,3 +993,16 @@ body {
     background: rgba(255,255,255,0.1);
 }
 
+.kpi-bar-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+}
+
+.kpi-bar {
+    position: absolute;
+    pointer-events: auto;
+    cursor: pointer;
+}
+
