@@ -794,6 +794,7 @@ body {
 .filter-header{}
 .filter-bar{display:flex;gap:15px;flex-wrap:wrap;}
 .note-timestamp{white-space:nowrap;}
+.note-date{max-width:160px;white-space:normal;overflow-wrap:break-word;word-break:break-word;vertical-align:top;overflow:hidden;text-overflow:ellipsis;}
 .quicknote-popup{position:fixed;top:50px;right:20px;width:420px;z-index:2000;}
 .quicknote-panel{
   background: rgba(10,10,10,0.98);
