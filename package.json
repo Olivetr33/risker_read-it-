@@ -4,13 +4,21 @@
   "description": "**No More Risk!** (also referred to as **RISKER**) is a small, privacy‑first web application for managing customer risk data. The entire application runs in your browser so no information ever leaves your device.",
   "main": "app.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "lint": "eslint .",
+    "test": "jest",
+    "setup": "sh ./setup.sh"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "jsdom": "^26.1.0",
     "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "eslint": "^8.57.0",
+    "jest": "^29.7.0",
+    "jsdom": "^24.0.0"
   }
 }
