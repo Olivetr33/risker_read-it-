@@ -9,6 +9,7 @@
     const levels = { debug: 0, info: 1, warn: 2, error: 3, none: 4 };
 
     const filters = { debug: true, info: true, warn: true, error: true };
+    const logs = [];
 
     function loadLevel() {
         const stored = global.localStorage ? localStorage.getItem('logLevel') : null;
@@ -50,16 +51,38 @@
         return 'info';
     }
 
+    function log(level, args){
+        const ts = new Date().toISOString();
+        logs.push({timestamp: ts, level, message: args.join(' ')});
+        if(isEnabled(levels[level], level)) origConsole[level](...args);
+        display();
+    }
+
+    function display(){
+        const el = global.document ? document.getElementById('debugLog') : null;
+        if(!el) return;
+        el.innerHTML = '';
+        logs.forEach(entry => {
+            if(filters[entry.level]){
+                const div = document.createElement('div');
+                div.textContent = `[${entry.timestamp}] ${entry.level.toUpperCase()}: ${entry.message}`;
+                el.appendChild(div);
+            }
+        });
+    }
+
     const logger = {
         levels,
         setLevel,
         saveLevel,
         getLevel,
         setFilter,
-        debug: (...args) => { if (isEnabled(levels.debug, 'debug')) origConsole.log(...args); },
-        info: (...args) => { if (isEnabled(levels.info, 'info')) origConsole.info(...args); },
-        warn: (...args) => { if (isEnabled(levels.warn, 'warn')) origConsole.warn(...args); },
-        error: (...args) => { if (isEnabled(levels.error, 'error')) origConsole.error(...args); },
+        logs,
+        display,
+        debug: (...args) => { log('debug', args); },
+        info: (...args) => { log('info', args); },
+        warn: (...args) => { log('warn', args); },
+        error: (...args) => { log('error', args); },
     };
 
     global.Logger = logger;
