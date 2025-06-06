@@ -1,6 +1,6 @@
 // app.js - KORRIGIERT: Synchrone ultra-robuste Zahlenextraktion
 
-const { DebugLogger, AutoSave, DataUtils, SessionManager, FileInputUtils, PrivacyUtils, escapeHtml } = window.AppUtils;
+const { DebugLogger, AutoSave, DataUtils, SessionManager, FileInputUtils, PrivacyUtils } = window.AppUtils;
 
 let excelData = [];
 let headers = [];
