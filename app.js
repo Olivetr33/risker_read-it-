@@ -17,6 +17,10 @@ let sliderMode = 'archive';
 let filteredSliderData = [];
 let currentSliderSort = { column: 'Total Risk', direction: 'desc' };
 
+// State locks for upload process
+let isUploadDialogOpen = false;
+let uploadInProgress = false;
+
 const displayColumns = ["ARR", "Customer Name", "LCSM", "Total Risk", "Actions"];
 
 // KORRIGIERT: IDENTISCHE Spalten-Mapping in allen Dateien
@@ -351,26 +355,42 @@ window.openHeatmap = function() {
 };
 
 window.triggerUpload = function() {
+    if (isUploadDialogOpen) return;
+    isUploadDialogOpen = true;
+
     console.log('Upload Data function called from:', window.location.href);
-    
+
     const currentUrl = window.location.href;
-    
+
     if (currentUrl.includes('riskmap.html')) {
         const fileInput = document.getElementById('fileInput');
         if (fileInput) {
-            fileInput.click();
+            fileInput.addEventListener('change', onFileInputChange, { once: true });
+            fileInput.value = '';
+            setTimeout(() => {
+                fileInput.click();
+                isUploadDialogOpen = false;
+            }, 100);
         } else {
             console.error('File input not found in RiskMap');
+            isUploadDialogOpen = false;
         }
         return;
     }
-    
+
     const newFileInput = FileInputUtils.reset('fileInput');
-    if (newFileInput) {
-        newFileInput.addEventListener('change', onFileInputChange, false);
-        newFileInput.value = "";
-        newFileInput.click();
+    if (!newFileInput) {
+        console.warn('❌ File input not reset correctly');
+        isUploadDialogOpen = false;
+        return;
     }
+
+    newFileInput.addEventListener('change', onFileInputChange, { once: true });
+    newFileInput.value = '';
+    setTimeout(() => {
+        newFileInput.click();
+        isUploadDialogOpen = false;
+    }, 100);
 };
 
 window.performLogout = function() {
@@ -716,13 +736,17 @@ window.sortSlider = function(column) {
 
 // KORRIGIERT: File Upload mit RICHTIGEN XLSX-Optionen - DAS IST DER ECHTE FIX!
 function onFileInputChange(e) {
+    if (uploadInProgress) return;
+    uploadInProgress = true;
+
     const file = e.target.files[0];
-    if (!file) return;
+    if (!file) { uploadInProgress = false; return; }
     const reader = new FileReader();
     reader.onload = handleFile;
     reader.onerror = err => {
         console.error('File read error:', err);
         alert('Failed to read file: ' + err.message);
+        uploadInProgress = false;
     };
     reader.readAsArrayBuffer(file);
 }
@@ -733,7 +757,7 @@ function handleFile(event) {
 
         if (!event.target.result && event.target.files) {
             const file = event.target.files[0];
-            if (!file) return;
+            if (!file) { uploadInProgress = false; return; }
             console.warn('handleFile called with file input event, using FileReader');
             const reader = new FileReader();
             reader.onload = handleFile;
@@ -774,6 +798,7 @@ function handleFile(event) {
 
         if (!chosenWorksheet) {
             alert('No sheet with valid data found in the uploaded file.');
+            uploadInProgress = false;
             return;
         }
 
@@ -826,9 +851,11 @@ function handleFile(event) {
             console.log('=== APP: File Upload SUCCESS ===');
             alert(`File uploaded successfully: ${extractedData.length} customers processed`);
         }
+        uploadInProgress = false;
     } catch (error) {
         console.error('APP: Processing error:', error);
         alert(`File processing failed: ${error.message}`);
+        uploadInProgress = false;
     }
 }
 function renderSortControls() {

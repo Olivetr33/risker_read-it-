@@ -908,13 +908,23 @@
         };
 
         window.triggerUpload = function() {
+            if (isUploadDialogOpen) return;
+            isUploadDialogOpen = true;
+
             console.log('Upload Data function called from RiskMap');
             const fileInput = AppUtils.FileInputUtils.reset('fileInput');
-            if (fileInput) {
-                fileInput.addEventListener('change', handleFileUpload, false);
-                fileInput.value = '';
-                fileInput.click();
+            if (!fileInput) {
+                console.warn('❌ File input not reset correctly');
+                isUploadDialogOpen = false;
+                return;
             }
+
+            fileInput.addEventListener('change', handleFileUpload, { once: true });
+            fileInput.value = '';
+            setTimeout(() => {
+                fileInput.click();
+                isUploadDialogOpen = false;
+            }, 100);
         };
 
         window.performLogout = function() {
@@ -943,6 +953,10 @@
         // RiskMap State
         let riskmapData = [];
         let currentSort = { column: 'Total Risk', direction: 'desc' };
+
+        // Upload state locks
+        let isUploadDialogOpen = false;
+        let uploadInProgress = false;
 
         // Daten-Loading mit flexibler Spaltenerkennung
         function loadRiskmapData() {
@@ -1484,8 +1498,11 @@
         
         // KORRIGIERT: File Upload mit IDENTISCHER Zahlenextraktion wie in app.js
         function handleFileUpload(e) {
+            if (uploadInProgress) return;
+            uploadInProgress = true;
+
             const file = e.target.files[0];
-            if (!file) return;
+            if (!file) { uploadInProgress = false; return; }
 
             console.debug('📁 File selected:', file.name, file.size);
 
@@ -1532,10 +1549,12 @@
 
                 console.log('=== RiskMap File Upload SUCCESS ===');
                 showNotification(`Datei erfolgreich hochgeladen: ${extractedData.length} Kunden mit korrekten ARR-Werten verarbeitet!`);
+                uploadInProgress = false;
 
             }, function(error){
                 console.error('❌ XLSX parsing failed:', error);
                 alert(`Dateiverarbeitung fehlgeschlagen: ${error.message}`);
+                uploadInProgress = false;
             });
         }
 
