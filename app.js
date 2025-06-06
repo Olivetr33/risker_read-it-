@@ -1454,6 +1454,24 @@ window.completeWorkflow = function(key){
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM Content Loaded - Setting up event listeners...');
 
+    // Ensure the file input properly triggers the upload handler
+    const directFileInput = document.querySelector('input[type="file"]');
+    if (directFileInput) {
+        directFileInput.addEventListener('change', (evt) => {
+            const f = evt.target.files?.[0];
+            if (!f) return console.warn('⚠️ No file selected');
+            console.log('📁 File selected:', f.name);
+            if (typeof XLSX?.read !== 'function') {
+                console.error('❌ XLSX library not loaded');
+                return;
+            }
+            handleFile(evt);
+        });
+        console.log('Direct file input listener attached');
+    } else {
+        console.error('❌ No file input found during DOMContentLoaded');
+    }
+
     document.querySelectorAll('.sidebar-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             const view = btn.getAttribute('data-target');
