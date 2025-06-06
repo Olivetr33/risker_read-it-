@@ -559,15 +559,66 @@ window.AppUtils = {
                 fileInput.value = '';
                 fileInput.type = '';
                 fileInput.type = 'file';
-                
+
                 const newFileInput = fileInput.cloneNode(true);
                 fileInput.parentNode.replaceChild(newFileInput, fileInput);
-                
+
                 window.AppUtils.DebugLogger.add('info', 'File input reset successfully');
                 return newFileInput;
             }
             return null;
         }
+    },
+
+    handleFileUpload: function(file, onSuccess, onError) {
+        if (!file) {
+            if (onError) onError(new Error('No file provided'));
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            try {
+                const data = new Uint8Array(event.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const sheet = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[sheet];
+                const json = XLSX.utils.sheet_to_json(worksheet, {
+                    header: 1,
+                    raw: false,
+                    defval: '',
+                    blankrows: false
+                });
+
+                const headers = json[0].filter(h => h && h.toString().trim() !== '');
+                const rawData = json.slice(1).map(row => {
+                    const obj = {};
+                    headers.forEach((header, i) => {
+                        if (header && header.trim()) {
+                            obj[header] = row[i];
+                        }
+                    });
+                    return obj;
+                }).filter(row => {
+                    return Object.values(row).some(value =>
+                        value !== undefined &&
+                        value !== null &&
+                        value !== '' &&
+                        value.toString().trim() !== ''
+                    );
+                });
+
+                if (onSuccess) onSuccess(rawData, headers);
+            } catch (err) {
+                if (onError) onError(err);
+            }
+        };
+
+        reader.onerror = function(err) {
+            if (onError) onError(err);
+        };
+
+        reader.readAsArrayBuffer(file);
     },
 
     calculateContractRisk: function(contractDate) {

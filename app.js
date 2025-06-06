@@ -721,111 +721,65 @@ function handleFile(e) {
 
     console.debug('📁 File selected:', file.name, file.size);
 
-    const reader = new FileReader();
-    reader.onload = function(event) {
-        console.debug('✅ FileReader loaded, size:', event.target.result.byteLength);
-        try {
-            console.log('=== APP: File Upload Started ===');
+    AppUtils.handleFileUpload(file, function(rawData, parsedHeaders) {
+        console.log('=== APP: File Upload Started ===');
 
-            const data = new Uint8Array(event.target.result);
-            
-            // KORRIGIERT: Einfache XLSX-Optionen - HIER WAR DER FEHLER!
-            const workbook = XLSX.read(data, { 
-                type: 'array'
-                // ALLE anderen Optionen ENTFERNT!
-            });
-            
-            const sheet = workbook.SheetNames[0];
-            const worksheet = workbook.Sheets[sheet];
-            
-            // KORRIGIERT: Bessere JSON-Optionen - HIER WAR DER FEHLER!
-            const json = XLSX.utils.sheet_to_json(worksheet, { 
-                header: 1,
-                raw: false,           // <-- ÄNDERUNG: false statt true
-                defval: '',           // <-- ÄNDERUNG: '' statt null
-                blankrows: false      // <-- NEU
-            });
+        headers = parsedHeaders;
+        console.log('APP: Original headers found:', headers);
 
-            headers = json[0].filter(header => header && header.toString().trim() !== '');
-            console.log('APP: Original headers found:', headers);
-            
-            let rawData = json.slice(1).map((row, rowIndex) => {
-                let obj = {};
-                headers.forEach((header, i) => {
-                    if (header && header.trim()) {
-                        obj[header] = row[i];
-                    }
-                });
-                return obj;
-            }).filter(row => {
-                return Object.values(row).some(value => 
-                    value !== undefined && 
-                    value !== null && 
-                    value !== '' && 
-                    value.toString().trim() !== ''
-                );
-            });
+        console.log(`APP: Raw data extracted: ${rawData.length} rows`);
 
-            console.log(`APP: Raw data extracted: ${rawData.length} rows`);
-            
-            const extractedData = extractCustomerData(rawData, headers);
-            console.log(`APP: Extracted data: ${extractedData.length} customers`);
-            
-            if (extractedData.length > 0) {
-                console.log('APP: Sample extracted customer:', extractedData[0]);
-                console.log('APP: ARR values in first 5 customers:', extractedData.slice(0, 5).map(c => ({
-                    name: c['Customer Name'],
-                    arr: c.ARR,
-                    risk: c['Total Risk']
-                })));
-            }
-            
-            excelData = extractedData;
-            aggregatedData = extractedData;
-            originalAggregatedData = [...extractedData];
+        const extractedData = extractCustomerData(rawData, headers);
+        console.log(`APP: Extracted data: ${extractedData.length} customers`);
 
-            filteredData = DataUtils.mergeSessionWithData(erledigtRows, extractedData);
-            selectedLCSM = 'ALL';
-
-            SessionManager.riskHistory = AppUtils.buildRiskHistory(extractedData);
-            if(!SessionManager.workflowEntries) SessionManager.workflowEntries = {};
-            
-            console.log('APP: Final data prepared:', {
-                excelData: excelData.length,
-                aggregatedData: aggregatedData.length,
-                filteredData: filteredData.length
-            });
-            
-            renderTable(DataUtils.getActiveCustomers(filteredData));
-            renderSortControls();
-            updateTableVisibility();
-            
-            const archiveBar = document.getElementById('archiveUploadBar');
-            if (archiveBar) {
-                archiveBar.style.display = 'none';
-            }
-            archiveMode = false;
-            
-            if (sliderOpen) {
-                updateSliderData();
-            }
-            
-            saveSession();
-            
-            console.log('=== APP: File Upload SUCCESS ===');
-            alert(`File uploaded successfully: ${extractedData.length} customers processed with corrected XLSX options`);
-            
-        } catch (error) {
-            console.error('❌ XLSX parsing failed:', error);
-            alert(`File processing failed: ${error.message}`);
+        if (extractedData.length > 0) {
+            console.log('APP: Sample extracted customer:', extractedData[0]);
+            console.log('APP: ARR values in first 5 customers:', extractedData.slice(0, 5).map(c => ({
+                name: c['Customer Name'],
+                arr: c.ARR,
+                risk: c['Total Risk']
+            })));
         }
-    };
 
-    reader.onerror = function(err) {
-        console.error('❌ FileReader error:', err);
-    };
+        excelData = extractedData;
+        aggregatedData = extractedData;
+        originalAggregatedData = [...extractedData];
 
-    reader.readAsArrayBuffer(file);
+        filteredData = DataUtils.mergeSessionWithData(erledigtRows, extractedData);
+        selectedLCSM = 'ALL';
+
+        SessionManager.riskHistory = AppUtils.buildRiskHistory(extractedData);
+        if(!SessionManager.workflowEntries) SessionManager.workflowEntries = {};
+
+        console.log('APP: Final data prepared:', {
+            excelData: excelData.length,
+            aggregatedData: aggregatedData.length,
+            filteredData: filteredData.length
+        });
+
+        renderTable(DataUtils.getActiveCustomers(filteredData));
+        renderSortControls();
+        updateTableVisibility();
+
+        const archiveBar = document.getElementById('archiveUploadBar');
+        if (archiveBar) {
+            archiveBar.style.display = 'none';
+        }
+        archiveMode = false;
+
+        if (sliderOpen) {
+            updateSliderData();
+        }
+
+        saveSession();
+
+        console.log('=== APP: File Upload SUCCESS ===');
+        alert(`File uploaded successfully: ${extractedData.length} customers processed with corrected XLSX options`);
+
+    }, function(error){
+        console.error('❌ XLSX parsing failed:', error);
+        alert(`File processing failed: ${error.message}`);
+    });
 }
 
 function renderSortControls() {
