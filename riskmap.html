@@ -1026,12 +1026,13 @@
                 
                 console.log(`RiskMap: Filtered data: ${riskmapData.length} active customers`);
                 
+                console.log('RiskMap Data:', riskmapData);
+                updateRiskmapDisplay();
+
                 if (riskmapData.length > 0) {
-                    updateRiskmapDisplay();
                     console.log('=== RiskMap Data Loading SUCCESS ===');
                 } else {
                     console.warn('RiskMap: No active customers found after filtering');
-                    showNoDataMessage();
                 }
                 
             } catch (error) {
