@@ -1432,22 +1432,23 @@ const QuickNote = {
 };
 window.QuickNote = QuickNote;
 
-function handleQuickNoteClick(e){
-    const customerId = e.currentTarget.dataset.customer;
-    console.log('🟡 QuickNote button clicked for:', customerId);
-    if(!customerId) return;
-    if(window.QuickNote && typeof QuickNote.render === 'function'){
-        QuickNote.render(customerId);
-    }
-    const slider = document.getElementById('quickNoteSlider');
-    if(slider) slider.classList.add('visible');
-}
+let quickNoteListenerAdded = false;
 
 function bindQuickNoteButtons(){
-    document.querySelectorAll('.quicknote-btn').forEach(btn=>{
-        btn.removeEventListener('click', handleQuickNoteClick);
-        btn.addEventListener('click', handleQuickNoteClick);
+    if (quickNoteListenerAdded) return;
+    document.addEventListener('click', function(e){
+        const btn = e.target.closest('.quicknote-btn');
+        if (!btn) return;
+        const customerId = btn.dataset.customer;
+        if (!customerId) return;
+        console.log('🟡 Opening QuickNote for:', customerId);
+        if (window.QuickNote && typeof QuickNote.render === 'function') {
+            QuickNote.render(customerId);
+        }
+        const slider = document.getElementById('quickNoteSlider');
+        if (slider) slider.classList.add('visible');
     });
+    quickNoteListenerAdded = true;
 }
 
 window.saveCurrentSession = function(){
@@ -1568,6 +1569,8 @@ window.completeWorkflow = function(key){
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM Content Loaded - Setting up event listeners...');
+
+    bindQuickNoteButtons();
 
     // Ensure the file input properly triggers the upload handler
     const fileInput = document.getElementById('fileInput');

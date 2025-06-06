@@ -1028,7 +1028,7 @@
                 
                 console.log('RiskMap Data:', riskmapData);
                 updateRiskmapDisplay();
-                console.log('📊 RiskMap data check:', AppUtils.SessionManager.getAllCustomers());
+                console.log('✅ RiskMap source data:', AppUtils.SessionManager.getAllCustomers());
 
                 if (riskmapData.length > 0) {
                     console.log('=== RiskMap Data Loading SUCCESS ===');
@@ -1315,20 +1315,21 @@
         const QuickNote = { render: openNoteModal };
         window.QuickNote = QuickNote;
 
-        function handleQuickNoteClick(e){
-            const id = e.currentTarget.dataset.customer;
-            console.log('🟡 QuickNote button clicked for:', id);
-            if(!id) return;
-            QuickNote.render(Number(id));
-            const slider = document.getElementById('quickNoteSlider');
-            if(slider) slider.classList.add('visible');
-        }
+        let quickNoteListenerAdded = false;
 
         function bindQuickNoteButtons(){
-            document.querySelectorAll('.quicknote-btn').forEach(btn=>{
-                btn.removeEventListener('click', handleQuickNoteClick);
-                btn.addEventListener('click', handleQuickNoteClick);
+            if(quickNoteListenerAdded) return;
+            document.addEventListener('click', function(e){
+                const btn = e.target.closest('.quicknote-btn');
+                if(!btn) return;
+                const id = btn.dataset.customer;
+                if(!id) return;
+                console.log('🟡 Opening QuickNote for:', id);
+                QuickNote.render(Number(id));
+                const slider = document.getElementById('quickNoteSlider');
+                if(slider) slider.classList.add('visible');
             });
+            quickNoteListenerAdded = true;
         }
 
         function addToWorkflowRiskmap(index){
@@ -1403,28 +1404,32 @@
             renderRiskmapTable();
         }
 
+        let updateSortFrame;
         function updateSortButtons() {
-            const arrBtn = document.getElementById('sortARR');
-            const riskBtn = document.getElementById('sortRisk');
+            if (updateSortFrame) cancelAnimationFrame(updateSortFrame);
+            updateSortFrame = requestAnimationFrame(function(){
+                const arrBtn = document.getElementById('sortARR');
+                const riskBtn = document.getElementById('sortRisk');
 
-            if (!arrBtn || !riskBtn) return;
-            
-            arrBtn.classList.remove('active');
-            riskBtn.classList.remove('active');
-            
-            if (currentSort.column === 'ARR') {
-                arrBtn.classList.add('active');
-                arrBtn.querySelector('.sort-arrow').textContent = currentSort.direction === 'asc' ? '↑' : '↓';
-                riskBtn.querySelector('.sort-arrow').textContent = '↓';
-            } else if (currentSort.column === 'Total Risk') {
-                riskBtn.classList.add('active');
-                riskBtn.querySelector('.sort-arrow').textContent = currentSort.direction === 'asc' ? '↑' : '↓';
-                arrBtn.querySelector('.sort-arrow').textContent = '↓';
-            } else {
-                riskBtn.classList.add('active');
-                arrBtn.querySelector('.sort-arrow').textContent = '↓';
-                riskBtn.querySelector('.sort-arrow').textContent = '↓';
-            }
+                if (!arrBtn || !riskBtn) return;
+
+                arrBtn.classList.remove('active');
+                riskBtn.classList.remove('active');
+
+                if (currentSort.column === 'ARR') {
+                    arrBtn.classList.add('active');
+                    arrBtn.querySelector('.sort-arrow').textContent = currentSort.direction === 'asc' ? '↑' : '↓';
+                    riskBtn.querySelector('.sort-arrow').textContent = '↓';
+                } else if (currentSort.column === 'Total Risk') {
+                    riskBtn.classList.add('active');
+                    riskBtn.querySelector('.sort-arrow').textContent = currentSort.direction === 'asc' ? '↑' : '↓';
+                    arrBtn.querySelector('.sort-arrow').textContent = '↓';
+                } else {
+                    riskBtn.classList.add('active');
+                    arrBtn.querySelector('.sort-arrow').textContent = '↓';
+                    riskBtn.querySelector('.sort-arrow').textContent = '↓';
+                }
+            });
         }
 
         // ================= Radar Feature ==================
@@ -1669,6 +1674,7 @@
             });
             
             loadRiskmapData();
+            bindQuickNoteButtons();
             
             const fileInput = document.getElementById('fileInput');
             if (fileInput) {
