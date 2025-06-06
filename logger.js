@@ -8,6 +8,8 @@
 
     const levels = { debug: 0, info: 1, warn: 2, error: 3, none: 4 };
 
+    const filters = { debug: true, info: true, warn: true, error: true };
+
     function loadLevel() {
         const stored = global.localStorage ? localStorage.getItem('logLevel') : null;
         const levelName = (stored || global.LOG_LEVEL || 'info').toLowerCase();
@@ -15,6 +17,16 @@
     }
 
     let currentLevel = loadLevel();
+
+    function setFilter(level, enabled){
+        if(filters.hasOwnProperty(level)){
+            filters[level] = !!enabled;
+        }
+    }
+
+    function isEnabled(levelIndex, levelName){
+        return currentLevel <= levelIndex && filters[levelName];
+    }
 
     function setLevel(level){
         if (typeof level === 'string') level = levels[level.toLowerCase()];
@@ -43,10 +55,11 @@
         setLevel,
         saveLevel,
         getLevel,
-        debug: (...args) => { if (currentLevel <= levels.debug) origConsole.log(...args); },
-        info: (...args) => { if (currentLevel <= levels.info) origConsole.info(...args); },
-        warn: (...args) => { if (currentLevel <= levels.warn) origConsole.warn(...args); },
-        error: (...args) => { if (currentLevel <= levels.error) origConsole.error(...args); },
+        setFilter,
+        debug: (...args) => { if (isEnabled(levels.debug, 'debug')) origConsole.log(...args); },
+        info: (...args) => { if (isEnabled(levels.info, 'info')) origConsole.info(...args); },
+        warn: (...args) => { if (isEnabled(levels.warn, 'warn')) origConsole.warn(...args); },
+        error: (...args) => { if (isEnabled(levels.error, 'error')) origConsole.error(...args); },
     };
 
     global.Logger = logger;

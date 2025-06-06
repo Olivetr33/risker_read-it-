@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>No more Risk! - RiskMap</title>
     <link rel="stylesheet" href="styles.css">
-    <script src="vendor/xlsx.full.min.js"></script>
+    <script src="./libs/xlsx.full.min.js"></script>
     <script src="logger.js"></script>
     <script src="utils.js"></script>
 </head>
@@ -119,13 +119,18 @@
     <!-- Footer -->
     <div class="footer-transparent" id="footerTransparent">
         <div class="footer-content-transparent">
-            <a href="https://github.com/Olivetr33/No-More-Risk-" target="_blank" rel="noopener" class="github-link">GitHub</a>
-            <select id="logLevelSelect" class="log-level-select">
-                <option value="debug">Debug</option>
-                <option value="info">Info</option>
-                <option value="warn">Warn</option>
-                <option value="error">Error</option>
-            </select>
+            <div class="footer-button-group">
+                <a href="https://github.com/Olivetr33/No-More-Risk-" target="_blank" rel="noopener" class="github-link">GitHub</a>
+                <div class="debug-dropdown">
+                    <button class="footer-link">Debug Log</button>
+                    <div class="dropdown-menu">
+                        <label><input type="checkbox" value="debug" checked> Debug</label>
+                        <label><input type="checkbox" value="info" checked> Info</label>
+                        <label><input type="checkbox" value="warn" checked> Warn</label>
+                        <label><input type="checkbox" value="error" checked> Error</label>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 

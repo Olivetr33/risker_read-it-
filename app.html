@@ -5,12 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>No more Risk! - Risk Management Dashboard</title>
     <link rel="stylesheet" href="styles.css">
-    <script src="vendor/xlsx.full.min.js"></script>
+    <script src="./libs/xlsx.full.min.js"></script>
     <script src="logger.js"></script>
 
     <!-- Lade utils.js ZUERST, dann app.js -->
     <script src="utils.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="./libs/chart.umd.js"></script>
     <script src="app.js"></script>
 </head>
 <body>
@@ -106,15 +106,19 @@
     <!-- Footer -->
     <div class="footer-transparent" id="footerTransparent">
         <div class="footer-content-transparent">
-            <a href="https://github.com/Olivetr33/No-More-Risk-" target="_blank" rel="noopener" class="github-link">GitHub</a>
-            <button class="faq-footer-btn" id="faqBtn">FAQ</button>
-            <select id="logLevelSelect" class="log-level-select">
-                <option value="debug">Debug</option>
-                <option value="info">Info</option>
-                <option value="warn">Warn</option>
-                <option value="error">Error</option>
-            </select>
-            <button class="footer-link debug-btn" id="debugBtn">Debug Log</button>
+            <div class="footer-button-group">
+                <a href="https://github.com/Olivetr33/No-More-Risk-" target="_blank" rel="noopener" class="github-link">GitHub</a>
+                <button class="faq-footer-btn" id="faqBtn">FAQ</button>
+                <div class="debug-dropdown">
+                    <button class="footer-link">Debug Log</button>
+                    <div class="dropdown-menu">
+                        <label><input type="checkbox" value="debug" checked> Debug</label>
+                        <label><input type="checkbox" value="info" checked> Info</label>
+                        <label><input type="checkbox" value="warn" checked> Warn</label>
+                        <label><input type="checkbox" value="error" checked> Error</label>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
