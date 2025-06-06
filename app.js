@@ -17,6 +17,9 @@ let sliderMode = 'archive';
 let filteredSliderData = [];
 let currentSliderSort = { column: 'Total Risk', direction: 'desc' };
 
+// Ensure notes object exists on startup
+SessionManager.notes = SessionManager.notes || {};
+
 function closeAllSliders(){
     document.querySelectorAll('.slider-panel, .sidebar-slider').forEach(el=>el.classList.remove('active'));
     const main = document.getElementById('mainContent');
@@ -1390,19 +1393,30 @@ function openNoteModal(key){
             </div>
         </div>`;
     requestAnimationFrame(()=>{ popup.style.display = 'block'; });
-    document.getElementById('saveNoteBtn').onclick = function(){
+    const outsideClick = function(e){
+        if(!popup.contains(e.target)){
+            popup.style.display = 'none';
+            document.removeEventListener('click', outsideClick);
+        }
+    };
+    document.addEventListener('click', outsideClick);
+
+    document.getElementById('saveNoteBtn').onclick = debounce(function(){
         const text = document.getElementById('noteEditor').value.trim();
         if(text){
-            if(!SessionManager.notes) SessionManager.notes = {};
             if(!Array.isArray(SessionManager.notes[key])) SessionManager.notes[key] = [];
             SessionManager.notes[key].push({text, timestamp: Date.now()});
             saveSession();
         }
         popup.style.display = 'none';
+        document.removeEventListener('click', outsideClick);
         if(typeof updateRiskmapDisplay==='function') updateRiskmapDisplay();
         renderTable(archiveMode ? erledigtRows : DataUtils.getActiveCustomers(filteredData));
+    }, 300);
+    document.getElementById('closeNoteBtn').onclick = function(){
+        popup.style.display='none';
+        document.removeEventListener('click', outsideClick);
     };
-    document.getElementById('closeNoteBtn').onclick = function(){ popup.style.display='none'; };
 }
 window.openNoteModal = openNoteModal;
 
