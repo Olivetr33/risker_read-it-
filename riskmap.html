@@ -732,19 +732,15 @@
         }
 
         function restoreSessionFile(file){
-            const reader = new FileReader();
-            reader.onload = function(ev){
-                try{
-                    const data = JSON.parse(ev.target.result);
-                    SessionManager.save(data);
-                    riskmapData = (data.filteredData || []).filter(c => !c.erledigt && !c.done && !c.archived);
-                    updateRiskmapDisplay();
-                    showToast('Session restored.');
-                }catch(err){
-                    alert('Invalid session file');
-                }
-            };
-            reader.readAsText(file);
+            AppUtils.handleSessionUpload(file, function(data){
+                riskmapData = (data.filteredData || []).filter(c => !c.erledigt && !c.done && !c.archived);
+                updateRiskmapDisplay();
+                renderRiskMap();
+                highlightSidebarButton('heatmapBtn');
+                showToast('✅ Session imported.');
+            }, function(){
+                showToast('❌ Failed to import session.');
+            });
         }
         function showToast(msg){
             const cont = document.getElementById('toastContainer');
@@ -1628,6 +1624,7 @@
 
                 console.log('=== RiskMap File Upload SUCCESS ===');
                 showNotification(`Datei erfolgreich hochgeladen: ${extractedData.length} Kunden mit korrekten ARR-Werten verarbeitet!`);
+                highlightSidebarButton('heatmapBtn');
                 uploadInProgress = false;
 
             }, function(error){
@@ -1641,16 +1638,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             console.log('=== RiskMap DOM Ready ===');
 
-            document.querySelectorAll('.sidebar-btn[data-target]').forEach(function(btn){
-                btn.addEventListener('click', function(){
-                    var target = this.dataset.target;
-                    if(typeof window[target] === 'function'){
-                        window[target]();
-                    }else{
-                        console.warn('Missing target function for:', target);
-                    }
-                });
-            });
+            setupSidebarNavigation();
 
             const uploadBtn = document.getElementById('uploadDataBtn');
             const uploadOptions = document.getElementById('uploadOptions');
