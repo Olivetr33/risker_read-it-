@@ -303,18 +303,7 @@ window.goToStart = function() {
         return;
     }
     
-    closeAllSliders();
-
-    const kpiContainer = document.getElementById('kpiDashboardContainer');
-    if (kpiContainer) kpiContainer.classList.remove('active');
-
-    archiveMode = false;
-    const archiveBar = document.getElementById('archiveUploadBar');
-    if (archiveBar) {
-        archiveBar.style.display = 'none';
-    }
-    renderTable(DataUtils.getActiveCustomers(filteredData));
-    updateTableVisibility();
+    switchToView('table');
     saveSession();
     console.log('ShowData function executed');
 };
@@ -329,13 +318,7 @@ window.showArchive = function() {
         return;
     }
     
-    closeAllSliders();
-
-    const kpiContainer = document.getElementById('kpiDashboardContainer');
-    if (kpiContainer) kpiContainer.classList.remove('active');
-
-    sliderMode = 'archive';
-    openSlider();
+    switchToView('archive');
     console.log('Archive function executed');
 };
 
@@ -1148,23 +1131,47 @@ function checkUrlParameters() {
 }
 
 function showKpiDashboard() {
-    closeAllSliders();
-
-    const tableContainer = document.getElementById('tableContainer');
-    if (tableContainer) tableContainer.style.display = 'none';
-
-    const kpiContainer = document.getElementById('kpiDashboardContainer');
-    if (kpiContainer) {
-        kpiContainer.classList.add('active');
-        renderKpiDashboard();
-        toggleFooter(true);
-    }
+    switchToView('kpi');
 }
 
 function closeKpiDashboard(){
     const kpiContainer = document.getElementById('kpiDashboardContainer');
     if(kpiContainer) kpiContainer.classList.remove('active');
     toggleFooter(false);
+}
+
+function switchToView(viewId){
+    requestAnimationFrame(()=>{
+        closeAllSliders();
+        const table = document.getElementById('tableContainer');
+        if(table) table.style.display = 'none';
+
+        if(viewId === 'table'){
+            archiveMode = false;
+            const bar = document.getElementById('archiveUploadBar');
+            if(bar) bar.style.display = 'none';
+            if(table) table.style.display = 'block';
+            renderTable(DataUtils.getActiveCustomers(filteredData));
+            updateTableVisibility();
+        }else if(viewId === 'archive'){
+            sliderMode = 'archive';
+            openSlider();
+        }else if(viewId === 'kpi'){
+            const kpi = document.getElementById('kpiDashboardContainer');
+            if(kpi){
+                kpi.classList.add('active');
+                renderKpiDashboard();
+                toggleFooter(true);
+            }
+        }else if(viewId === 'workflow'){
+            const sidebar = document.getElementById('workflowSidebar');
+            if(sidebar){
+                renderWorkflowSidebar();
+                sidebar.classList.add('active');
+                toggleFooter(true);
+            }
+        }
+    });
 }
 
 function renderKpiDashboard() {
@@ -1471,10 +1478,7 @@ function toggleWorkflow(){
     if(!bar) return;
     const show = !bar.classList.contains('active');
     if(show){
-        closeAllSliders();
-        renderWorkflowSidebar();
-        bar.classList.add('active');
-        toggleFooter(true);
+        switchToView('workflow');
     }else{
         bar.classList.remove('active');
         toggleFooter(false);
