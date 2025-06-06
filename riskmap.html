@@ -1255,15 +1255,14 @@
             const customer = riskmapData[index];
             if(!customer) return;
             const key = AppUtils.DataUtils.generateCustomerKey(customer);
-            closeAllSliders();
             let popup = document.getElementById('quicknotePopup');
             if(!popup){
                 popup = document.createElement('div');
                 popup.id = 'quicknotePopup';
-                popup.className = 'quicknote-popup quicknote-panel quicknote-slider-fixed';
+                popup.className = 'quicknote-popup quicknote-panel quicknote-slider-fixed quicknote-overlay';
                 document.body.appendChild(popup);
             } else {
-                popup.className = 'quicknote-popup quicknote-panel quicknote-slider-fixed';
+                popup.className = 'quicknote-popup quicknote-panel quicknote-slider-fixed quicknote-overlay';
             }
             const notesRaw = SessionManager.notes && SessionManager.notes[key];
             const notes = Array.isArray(notesRaw) ? notesRaw : (notesRaw ? [notesRaw] : []);

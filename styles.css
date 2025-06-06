@@ -939,3 +939,6 @@ body {
 .sidebar-btn-layout::after {
   content: none !important;
 }
+.quicknote-overlay {
+    z-index: 5000;
+}
