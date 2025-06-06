@@ -1111,11 +1111,10 @@ function renderKpiDashboard() {
     card.className = 'kpi-dashboard-card';
 
     const controls = document.createElement('div');
-    controls.className = 'slider-filters-static filter-header';
-    controls.style.background = 'transparent';
+    controls.className = 'sort-controls';
     controls.innerHTML = '<h3>Sort Data</h3>';
     const btnWrap = document.createElement('div');
-    btnWrap.className = 'filter-buttons filter-bar';
+    btnWrap.className = 'filter-bar';
     const metricSelect = document.createElement('select');
     metricSelect.id = 'metricSelect';
     ['ARR','Total Risk','Objective Risk','Contact Risk','Contract Risk'].forEach(m => {
@@ -1167,6 +1166,7 @@ function renderKpiDashboard() {
 
     let chart;
     function updateChart() {
+        if (typeof Chart === 'undefined') { console.warn('Chart.js not loaded'); return; }
         const metric = metricSelect.value;
         const labels = aggregatedData.map(r => r['Customer Name']);
         const data = aggregatedData.map(r => parseFloat(r[metric]) || 0);
@@ -1197,16 +1197,16 @@ function renderKpiDashboard() {
         window.addEventListener('resize', ()=>chart.resize());
     }
 
-    metricSelect.onchange = updateChart;
-    sortAsc.onclick = () => { aggregatedData.sort((a,b)=> (a[metricSelect.value]||0)-(b[metricSelect.value]||0)); updateChart(); };
-    sortDesc.onclick = () => { aggregatedData.sort((a,b)=> (b[metricSelect.value]||0)-(a[metricSelect.value]||0)); updateChart(); };
+    metricSelect.onchange = () => { if(typeof Chart!=='undefined') updateChart(); };
+    sortAsc.onclick = () => { aggregatedData.sort((a,b)=> (a[metricSelect.value]||0)-(b[metricSelect.value]||0)); if(typeof Chart!=='undefined') updateChart(); };
+    sortDesc.onclick = () => { aggregatedData.sort((a,b)=> (b[metricSelect.value]||0)-(a[metricSelect.value]||0)); if(typeof Chart!=='undefined') updateChart(); };
     exportBtn.onclick = () => { if(chart) AppUtils.exportChartAsPng(chart,'kpi-chart.png'); };
     document.getElementById('toggleRiskHistory').onchange = function(){
         historyWrap.style.display = this.checked ? 'block' : 'none';
         if(this.checked) renderRiskHistoryChart();
     };
 
-    updateChart();
+    if (typeof Chart !== 'undefined') updateChart();
 }
 
 function renderRiskHistoryChart() {
@@ -1242,16 +1242,19 @@ function renderRiskHistoryChart() {
 function showFaqModal() {
     const faqHtml = `<div class='privacy-popup-content'>
         <h3>FAQ</h3>
-        <p>This application contains several modules:</p>
-        <ul>
-            <li><b>📈 KPI Dashboard</b> - Displays customer metrics and allows sorting and exporting.</li>
-            <li><b>🧭 RiskMap</b> - Table of active customer risks with filters and Radar details.</li>
-            <li><b>📋 Archive</b> - Shows previously archived customers.</li>
-            <li><b>➕ Workflow</b> - Customers for manual follow-up managed via Add to Workflow.</li>
-            <li><b>🔍 Radar</b> - Detailed popup for a customer with risk breakdown.</li>
-            <li><b>💾 Save Session</b> - Stores current session state.</li>
-            <li><b>🗒 QuickNotes</b> - Attach editable notes to each customer entry.</li>
-        </ul>
+        <p>The dashboard offers several actions:</p>
+        <h4>➕ Add to Workflow</h4>
+        <p>Adds the selected customer to the workflow follow-up list and removes them from active tables.</p>
+        <h4>📥 Archive</h4>
+        <p>Moves the customer to the archive. The entry is removed from live data tables.</p>
+        <h4>🗒 QuickNote</h4>
+        <p>Attach notes to a customer. Notes are saved per session and can be edited anytime.</p>
+        <h4>💾 Save Session</h4>
+        <p>Manually stores the session state in the browser's local storage.</p>
+        <h4>📊 KPI Dashboard</h4>
+        <p>Displays risk and revenue data as horizontal bar charts, sortable and exportable.</p>
+        <h4>🔍 Radar</h4>
+        <p>Opens a detailed view for the customer with additional risk information.</p>
     </div>`;
     showPopup(faqHtml);
 }
@@ -1285,16 +1288,19 @@ function showToast(message){
 }
 
 function openNoteModal(key){
-    const bg = document.getElementById('dialogBg');
-    const inner = document.getElementById('dialogInner');
-    if(!bg || !inner) return;
+    let popup = document.getElementById('quicknotePopup');
+    if(!popup){
+        popup = document.createElement('div');
+        popup.id = 'quicknotePopup';
+        popup.className = 'quicknote-popup';
+        document.body.appendChild(popup);
+    }
     const note = (SessionManager.notes && SessionManager.notes[key]) || {text:'',timestamp:null};
     const allRows = [...filteredData, ...aggregatedData, ...erledigtRows];
     const row = allRows.find(r => DataUtils.generateCustomerKey(r) === key) || {};
-    const customerName = row['Customer Name'] || row['Kunde'] || row['Name'] || 'Customer';
     const user = row['LCSM'] || 'User';
     const tsText = note.timestamp ? new Date(note.timestamp).toISOString().slice(0,16).replace('T',' ') : '';
-    inner.innerHTML = `
+    popup.innerHTML = `
         <div class="slider-header filter-header">
             <h2 class="section-title">Quick Note</h2>
             <button class="close-slider-btn" id="closeNoteBtn">×</button>
@@ -1306,7 +1312,7 @@ function openNoteModal(key){
                     <tr class="table-row">
                         <td class="table-cell"><span class="note-timestamp">${tsText ? '🕒 '+tsText : ''}</span></td>
                         <td class="table-cell">${user}</td>
-                        <td class="table-cell"><div id="noteEditor" contenteditable="true" style="min-height:100px;border:1px solid #555;padding:10px;border-radius:6px;">${note.text || ''}</div></td>
+                        <td class="table-cell"><textarea id="noteEditor" class="quicknote-content">${note.text || ''}</textarea></td>
                     </tr>
                 </tbody>
             </table>
@@ -1314,17 +1320,17 @@ function openNoteModal(key){
                 <button class="table-action-btn" id="saveNoteBtn">Save</button>
             </div>
         </div>`;
-    bg.style.display = 'flex';
+    popup.style.display = 'block';
     document.getElementById('saveNoteBtn').onclick = function(){
-        const text = document.getElementById('noteEditor').innerHTML;
+        const text = document.getElementById('noteEditor').value;
         if(!SessionManager.notes) SessionManager.notes = {};
         const ts = Date.now();
         SessionManager.notes[key] = {text, timestamp: ts};
         saveSession();
-        bg.style.display = 'none';
+        popup.style.display = 'none';
         renderTable(archiveMode ? erledigtRows : DataUtils.getActiveCustomers(filteredData));
     };
-    document.getElementById('closeNoteBtn').onclick = function(){ bg.style.display='none'; };
+    document.getElementById('closeNoteBtn').onclick = function(){ popup.style.display='none'; };
 }
 window.openNoteModal = openNoteModal;
 
@@ -1344,6 +1350,8 @@ function addWorkflowEntry(row){
             addedAt: new Date().toISOString(),
             rowData: {...row}
         };
+        filteredData = filteredData.filter(r => DataUtils.generateCustomerKey(r) !== key);
+        aggregatedData = aggregatedData.filter(r => DataUtils.generateCustomerKey(r) !== key);
         markInWorkflow(row);
         saveSession();
         renderWorkflowSidebar();
@@ -1588,6 +1596,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 logSelect.addEventListener('change', function(){
                     Logger.saveLevel(this.value);
                 });
+            }
+
+            const debugBtn = document.getElementById('debugBtn');
+            if (debugBtn && window.AppUtils && AppUtils.DebugLogger) {
+                debugBtn.onclick = AppUtils.DebugLogger.download.bind(AppUtils.DebugLogger);
             }
 
             updateTableVisibility();
