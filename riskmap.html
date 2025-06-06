@@ -1259,10 +1259,10 @@
             if(!popup){
                 popup = document.createElement('div');
                 popup.id = 'quicknotePopup';
-                popup.className = 'quicknote-popup quicknote-panel quicknote-slider-fixed quicknote-overlay';
+                popup.className = 'quicknote-popup slider-panel quicknote-panel quicknote-slider-fixed quicknote-overlay';
                 document.body.appendChild(popup);
             } else {
-                popup.className = 'quicknote-popup quicknote-panel quicknote-slider-fixed quicknote-overlay';
+                popup.className = 'quicknote-popup slider-panel quicknote-panel quicknote-slider-fixed quicknote-overlay';
             }
             const notesRaw = SessionManager.notes && SessionManager.notes[key];
             const notes = Array.isArray(notesRaw) ? notesRaw : (notesRaw ? [notesRaw] : []);
