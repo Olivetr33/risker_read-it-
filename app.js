@@ -17,6 +17,14 @@ let sliderMode = 'archive';
 let filteredSliderData = [];
 let currentSliderSort = { column: 'Total Risk', direction: 'desc' };
 
+function closeAllSliders(){
+    document.querySelectorAll('.slider-panel, .sidebar-slider').forEach(el=>el.classList.remove('active'));
+    const main = document.getElementById('mainContent');
+    if(main) main.classList.remove('slider-open');
+    sliderOpen = false;
+    toggleFooter(false);
+}
+
 // State locks for upload process
 let isUploadDialogOpen = false;
 let uploadInProgress = false;
@@ -292,9 +300,7 @@ window.goToStart = function() {
         return;
     }
     
-    if (sliderOpen) {
-        closeSlider();
-    }
+    closeAllSliders();
 
     const kpiContainer = document.getElementById('kpiDashboardContainer');
     if (kpiContainer) kpiContainer.classList.remove('active');
@@ -320,9 +326,7 @@ window.showArchive = function() {
         return;
     }
     
-    if (sliderOpen) {
-        closeSlider();
-    }
+    closeAllSliders();
 
     const kpiContainer = document.getElementById('kpiDashboardContainer');
     if (kpiContainer) kpiContainer.classList.remove('active');
@@ -506,6 +510,7 @@ window.performLogout = function() {
 };
 
 function openSlider() {
+    closeAllSliders();
     const sliderPanel = document.getElementById('sliderPanel');
     const mainContent = document.getElementById('mainContent');
     const sliderTitle = document.getElementById('sliderTitle');
@@ -655,7 +660,19 @@ function renderSliderTable() {
         }
         
         const doneTag = customer.tag === 'Done' ? `<span class="done-tag" onclick="removeFromArchiveSlider(${index})">Done</span>` : '';
+        const notes = SessionManager.notes && SessionManager.notes[DataUtils.generateCustomerKey(customer)];
+        let preview = '';
+        let hasNote = false;
+        if(Array.isArray(notes) && notes.length){
+            preview = notes[notes.length-1].text.substring(0,50);
+            hasNote = true;
+        }else if(notes && notes.text){
+            preview = notes.text.substring(0,50);
+            hasNote = true;
+        }
+        const noteClass = hasNote ? ' quicknote-has-content' : '';
         const actionButton = `<button class="table-action-btn remove-btn" onclick="removeFromArchiveSlider(${index})">Remove</button>`;
+        const noteButton = `<button class="table-action-btn note-btn${noteClass}" onclick="openNoteModal('${DataUtils.generateCustomerKey(customer)}')" title="${preview}">🗒</button>`;
         
         tableHTML += `
             <tr>
@@ -671,7 +688,7 @@ function renderSliderTable() {
                         <span class="risk-badge" style="background: ${riskColor}; color: #000;">${riskBadge}</span>
                     </div>
                 </td>
-                <td>${doneTag}${actionButton}</td>
+                <td>${doneTag}${actionButton}${noteButton}</td>
             </tr>
         `;
     });
@@ -954,9 +971,17 @@ function renderTable(data) {
         
         displayColumns.forEach(col => {
             if (col === 'Actions') {
-                const note = SessionManager.notes && SessionManager.notes[customerKey];
-                const preview = note ? note.text.substring(0,50) : '';
-                const noteClass = note && note.text ? ' quicknote-has-content' : '';
+                const noteData = SessionManager.notes && SessionManager.notes[customerKey];
+                let preview = '';
+                let hasNote = false;
+                if(Array.isArray(noteData) && noteData.length){
+                    preview = noteData[noteData.length-1].text.substring(0,50);
+                    hasNote = true;
+                }else if(noteData && noteData.text){
+                    preview = noteData.text.substring(0,50);
+                    hasNote = true;
+                }
+                const noteClass = hasNote ? ' quicknote-has-content' : '';
                 if (archiveMode) {
                     tableHTML += `<td>
                         <button class="table-action-btn remove-btn" onclick="removeFromArchive(${index})">Remove</button>
@@ -1120,7 +1145,7 @@ function checkUrlParameters() {
 }
 
 function showKpiDashboard() {
-    if (sliderOpen) closeSlider();
+    closeAllSliders();
 
     const tableContainer = document.getElementById('tableContainer');
     if (tableContainer) tableContainer.style.display = 'none';
@@ -1332,14 +1357,17 @@ function openNoteModal(key){
     if(!popup){
         popup = document.createElement('div');
         popup.id = 'quicknotePopup';
-        popup.className = 'quicknote-popup';
+        popup.className = 'quicknote-popup quicknote-panel';
         document.body.appendChild(popup);
+    } else {
+        popup.className = 'quicknote-popup quicknote-panel';
     }
-    const note = (SessionManager.notes && SessionManager.notes[key]) || {text:'',timestamp:null};
+    const notesRaw = SessionManager.notes && SessionManager.notes[key];
+    const notes = Array.isArray(notesRaw) ? notesRaw : (notesRaw ? [notesRaw] : []);
     const allRows = [...filteredData, ...aggregatedData, ...erledigtRows];
     const row = allRows.find(r => DataUtils.generateCustomerKey(r) === key) || {};
     const user = row['LCSM'] || 'User';
-    const tsText = note.timestamp ? new Date(note.timestamp).toISOString().slice(0,16).replace('T',' ') : '';
+    const notesHtml = notes.map(n=>`<tr class="table-row"><td class="table-cell"><span class="note-timestamp">🕒 ${new Date(n.timestamp).toISOString().slice(0,16).replace('T',' ')}</span></td><td class="table-cell">${AppUtils.escapeHtml(user)}</td><td class="table-cell">${AppUtils.escapeHtml(n.text)}</td></tr>`).join('');
     popup.innerHTML = `
         <div class="slider-header filter-header">
             <h2 class="section-title">Quick Note</h2>
@@ -1348,11 +1376,11 @@ function openNoteModal(key){
         <div class="slider-content">
             <table class="data-table">
                 <thead><tr><th>Date</th><th>User</th><th>Note</th></tr></thead>
-                <tbody>
+                <tbody>${notesHtml}
                     <tr class="table-row">
-                        <td class="table-cell"><span class="note-timestamp">${tsText ? '🕒 '+tsText : ''}</span></td>
-                        <td class="table-cell">${user}</td>
-                        <td class="table-cell"><textarea id="noteEditor" class="quicknote-content">${note.text || ''}</textarea></td>
+                        <td class="table-cell"></td>
+                        <td class="table-cell">${AppUtils.escapeHtml(user)}</td>
+                        <td class="table-cell"><textarea id="noteEditor" class="quicknote-content"></textarea></td>
                     </tr>
                 </tbody>
             </table>
@@ -1362,12 +1390,15 @@ function openNoteModal(key){
         </div>`;
     popup.style.display = 'block';
     document.getElementById('saveNoteBtn').onclick = function(){
-        const text = document.getElementById('noteEditor').value;
-        if(!SessionManager.notes) SessionManager.notes = {};
-        const ts = Date.now();
-        SessionManager.notes[key] = {text, timestamp: ts};
-        saveSession();
+        const text = document.getElementById('noteEditor').value.trim();
+        if(text){
+            if(!SessionManager.notes) SessionManager.notes = {};
+            if(!Array.isArray(SessionManager.notes[key])) SessionManager.notes[key] = [];
+            SessionManager.notes[key].push({text, timestamp: Date.now()});
+            saveSession();
+        }
         popup.style.display = 'none';
+        if(typeof updateRiskmapDisplay==='function') updateRiskmapDisplay();
         renderTable(archiveMode ? erledigtRows : DataUtils.getActiveCustomers(filteredData));
     };
     document.getElementById('closeNoteBtn').onclick = function(){ popup.style.display='none'; };
@@ -1426,6 +1457,7 @@ function toggleWorkflow(){
     if(!bar) return;
     const show = !bar.classList.contains('active');
     if(show){
+        closeAllSliders();
         renderWorkflowSidebar();
         bar.classList.add('active');
         toggleFooter(true);
@@ -1456,7 +1488,18 @@ function renderWorkflowSidebar(){
     }
     let html = '<tr><th>Customer</th><th>LCSM</th><th>Total Risk</th><th>Added</th><th>Action</th></tr>';
     Object.entries(entries).forEach(([k,e])=>{
-        html += `<tr><td>${e.name}</td><td>${e.lcsms}</td><td>${e.totalRisk}</td><td>${new Date(e.addedAt).toLocaleDateString()}</td><td><button class="table-action-btn" onclick="completeWorkflow(\'${k}\')">Done</button></td></tr>`;
+        const notes = SessionManager.notes && SessionManager.notes[k];
+        let preview = '';
+        let hasNote = false;
+        if(Array.isArray(notes) && notes.length){
+            preview = notes[notes.length-1].text.substring(0,50);
+            hasNote = true;
+        }else if(notes && notes.text){
+            preview = notes.text.substring(0,50);
+            hasNote = true;
+        }
+        const noteClass = hasNote ? ' quicknote-has-content' : '';
+        html += `<tr><td>${e.name}</td><td>${e.lcsms}</td><td>${e.totalRisk}</td><td>${new Date(e.addedAt).toLocaleDateString()}</td><td><button class="table-action-btn" onclick="completeWorkflow(\'${k}\')">Done</button><button class="table-action-btn note-btn${noteClass}" onclick="openNoteModal('${k}')" title="${preview}">🗒</button></td></tr>`;
     });
     table.innerHTML = html;
 }
