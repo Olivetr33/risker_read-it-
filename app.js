@@ -1577,6 +1577,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             }
 
+            const logSelect = document.getElementById('logLevelSelect');
+            if (logSelect && window.Logger) {
+                logSelect.value = Logger.getLevel();
+                logSelect.addEventListener('change', function(){
+                    Logger.saveLevel(this.value);
+                });
+            }
+
             updateTableVisibility();
             AutoSave.start(saveSession);
             

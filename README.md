@@ -8,6 +8,7 @@
 - Sort, filter and archive customer records
 - Risk heatmap view and simple dashboard
 - Data is stored only in browser storage – no server or tracking
+- Adjustable console log level via the footer dropdown
 
 ## Setup
 
@@ -21,6 +22,7 @@
 2. Use **Upload Data** to import your Excel file.
 3. Manage and review the table or open the risk map.
 4. Clear data or archive entries when finished.
+5. Adjust the log level using the footer selector if needed. Your choice is stored locally.
 
 ## External dependencies
 
