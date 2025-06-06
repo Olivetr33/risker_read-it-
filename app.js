@@ -1445,23 +1445,22 @@ const QuickNote = {
 };
 window.QuickNote = QuickNote;
 
-let quickNoteListenerAdded = false;
+function handleQuickNoteOpen(e) {
+    const customerId = e.currentTarget.dataset.customer;
+    if (!customerId) return;
+    console.log('🟡 QuickNote triggered for:', customerId);
+    if (window.QuickNote && typeof QuickNote.render === 'function') {
+        QuickNote.render(customerId);
+    }
+    const slider = document.getElementById('quickNoteSlider');
+    if (slider) slider.classList.add('visible');
+}
 
-function bindQuickNoteButtons(){
-    if (quickNoteListenerAdded) return;
-    document.addEventListener('click', function(e){
-        const btn = e.target.closest('.quicknote-btn');
-        if (!btn) return;
-        const customerId = btn.dataset.customer;
-        if (!customerId) return;
-        console.log('🟡 Opening QuickNote for:', customerId);
-        if (window.QuickNote && typeof QuickNote.render === 'function') {
-            QuickNote.render(customerId);
-        }
-        const slider = document.getElementById('quickNoteSlider');
-        if (slider) slider.classList.add('visible');
+function bindQuickNoteButtons() {
+    document.querySelectorAll('.quicknote-btn').forEach(btn => {
+        btn.removeEventListener('click', handleQuickNoteOpen);
+        btn.addEventListener('click', handleQuickNoteOpen);
     });
-    quickNoteListenerAdded = true;
 }
 
 window.saveCurrentSession = function(){

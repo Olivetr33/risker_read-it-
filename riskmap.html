@@ -67,7 +67,7 @@
                             <span class="sort-text">Total Risk</span>
                             <span class="sort-arrow">↓</span>
                         </button>
-                        <button class="sort-btn" id="radarBtn">Radar</button>
+                        <button class="sort-btn" id="radarBtn">Top 10 Radar</button>
                     </div>
                 </div>
 
@@ -705,7 +705,6 @@
             font-size: 12px;
         }
         .radar-actions .archive-btn { background: #4CAF50; color: #fff; }
-        .radar-actions .todo-btn { background: #2196F3; color: #fff; }
         .radar-close {
             margin-top: 12px;
             padding: 6px 14px;
@@ -965,81 +964,15 @@
         // Daten-Loading mit flexibler Spaltenerkennung
         function loadRiskmapData() {
             console.log('=== RiskMap Data Loading Started ===');
-
-            if (typeof localStorage === 'undefined') {
-                console.warn('RiskMap: localStorage not available');
+            const allCustomers = AppUtils.SessionManager.getAllCustomers() || [];
+            console.log('📊 RiskMap source data:', allCustomers);
+            if (!allCustomers.length) {
                 showNoDataMessage();
                 return;
             }
-            
-            try {
-                const allKeys = ['riskerSessionData', 'sessionData', 'appData'];
-                let sessionData = null;
-                let foundKey = null;
-                
-                for (const key of allKeys) {
-                    try {
-                        const data = localStorage.getItem(key);
-                        if (data && data.length > 10) {
-                            const parsedData = JSON.parse(data);
-                            if (parsedData && (parsedData.aggregatedData || parsedData.filteredData || parsedData.excelData)) {
-                                sessionData = parsedData;
-                                foundKey = key;
-                                console.log(`RiskMap: Found valid session data in key: ${key}`);
-                                break;
-                            }
-                        }
-                    } catch (e) {
-                        console.warn(`RiskMap: Failed to parse key ${key}:`, e);
-                    }
-                }
-                
-                if (!sessionData) {
-                    console.warn('RiskMap: No session data found in any key');
-                    showNoDataMessage();
-                    return;
-                }
-                
-                let sourceData = null;
-                let dataSource = '';
-                
-                if (sessionData.aggregatedData && Array.isArray(sessionData.aggregatedData) && sessionData.aggregatedData.length > 0) {
-                    sourceData = sessionData.aggregatedData;
-                    dataSource = 'aggregatedData';
-                } else if (sessionData.filteredData && Array.isArray(sessionData.filteredData) && sessionData.filteredData.length > 0) {
-                    sourceData = sessionData.filteredData;
-                    dataSource = 'filteredData';
-                } else if (sessionData.excelData && Array.isArray(sessionData.excelData) && sessionData.excelData.length > 0) {
-                    sourceData = sessionData.excelData;
-                    dataSource = 'excelData';
-                } else {
-                    console.warn('RiskMap: No valid data arrays found in session');
-                    showNoDataMessage();
-                    return;
-                }
-                
-                console.log(`RiskMap: Using ${dataSource} with ${sourceData.length} items`);
-                
-                riskmapData = sourceData.filter(customer => {
-                    return !customer.erledigt && !customer.done && !customer.completed && !customer.archived;
-                });
-                
-                console.log(`RiskMap: Filtered data: ${riskmapData.length} active customers`);
-                
-                console.log('RiskMap Data:', riskmapData);
-                updateRiskmapDisplay();
-                console.log('✅ RiskMap source data:', AppUtils.SessionManager.getAllCustomers());
-
-                if (riskmapData.length > 0) {
-                    console.log('=== RiskMap Data Loading SUCCESS ===');
-                } else {
-                    console.warn('RiskMap: No active customers found after filtering');
-                }
-                
-            } catch (error) {
-                console.error('=== RiskMap Data Loading ERROR ===', error);
-                showNoDataMessage();
-            }
+            riskmapData = allCustomers.filter(c => !c.erledigt && !c.done && !c.completed && !c.archived);
+            updateRiskmapDisplay();
+            console.log('=== RiskMap Data Loading SUCCESS ===');
         }
 
         function showNoDataMessage() {
@@ -1315,21 +1248,20 @@
         const QuickNote = { render: openNoteModal };
         window.QuickNote = QuickNote;
 
-        let quickNoteListenerAdded = false;
+        function handleQuickNoteOpen(e){
+            const id = e.currentTarget.dataset.customer;
+            if(!id) return;
+            console.log('🟡 QuickNote triggered for:', id);
+            QuickNote.render(Number(id));
+            const slider = document.getElementById('quickNoteSlider');
+            if(slider) slider.classList.add('visible');
+        }
 
         function bindQuickNoteButtons(){
-            if(quickNoteListenerAdded) return;
-            document.addEventListener('click', function(e){
-                const btn = e.target.closest('.quicknote-btn');
-                if(!btn) return;
-                const id = btn.dataset.customer;
-                if(!id) return;
-                console.log('🟡 Opening QuickNote for:', id);
-                QuickNote.render(Number(id));
-                const slider = document.getElementById('quickNoteSlider');
-                if(slider) slider.classList.add('visible');
+            document.querySelectorAll('.quicknote-btn').forEach(btn=>{
+                btn.removeEventListener('click', handleQuickNoteOpen);
+                btn.addEventListener('click', handleQuickNoteOpen);
             });
-            quickNoteListenerAdded = true;
         }
 
         function addToWorkflowRiskmap(index){
@@ -1546,7 +1478,6 @@
                     `<td>${risk.toFixed(1)}</td>` +
                     `<td class="radar-actions">` +
                         `<button class="table-action-btn" onclick="archiveFromRadar(${riskmapData.indexOf(row)})" title="Archive this entry">Archive</button>` +
-                        `<button class="todo-btn" onclick="toggleRadarDetail(${i})" title="Show details">Get To-Do</button>` +
                         `<button class="table-action-btn" onclick="addToWorkflowRadar(${i})" title="Add to Workflow">➕ Add to Workflow</button>` +
                     `</td>` +
                 `</tr>`;
@@ -1732,7 +1663,7 @@
     </script>
     <div id="radarPanel" class="slider-panel">
       <div class="slider-header">
-        <h2>RADAR</h2>
+        <h2>Top 10 Radar</h2>
         <button id="closeRadarBtn" class="close-slider-btn">×</button>
       </div>
       <div class="slider-content" id="radarContent"></div>
