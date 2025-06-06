@@ -581,14 +581,35 @@ window.AppUtils = {
             try {
                 const data = new Uint8Array(event.target.result);
                 const workbook = XLSX.read(data, { type: 'array' });
-                const sheet = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[sheet];
-                const json = XLSX.utils.sheet_to_json(worksheet, {
-                    header: 1,
-                    raw: false,
-                    defval: '',
-                    blankrows: false
-                });
+                let chosenWorksheet = null;
+                let json = null;
+                for (const sheetName of workbook.SheetNames) {
+                    const tempSheet = workbook.Sheets[sheetName];
+                    const tempJson = XLSX.utils.sheet_to_json(tempSheet, {
+                        header: 1,
+                        raw: false,
+                        defval: '',
+                        blankrows: false
+                    });
+                    const validRows = tempJson.slice(1).filter(row =>
+                        row.some(cell =>
+                            cell !== undefined &&
+                            cell !== null &&
+                            cell.toString().trim() !== ''
+                        )
+                    );
+                    if (validRows.length > 0) {
+                        chosenWorksheet = tempSheet;
+                        json = [tempJson[0], ...validRows];
+                        break;
+                    }
+                }
+
+                if (!chosenWorksheet) {
+                    alert('No sheet with valid data found in the uploaded file.');
+                    if (onError) onError(new Error('No valid sheet found'));
+                    return;
+                }
 
                 const headers = json[0].filter(h => h && h.toString().trim() !== '');
                 const rawData = json.slice(1).map(row => {
