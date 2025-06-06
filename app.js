@@ -1239,12 +1239,25 @@ function renderKpiDashboard() {
     container.appendChild(card);
 
     let chart;
+    let dashboardData = aggregatedData.slice();
+    let currentSort = 'desc';
+
+    function sortData() {
+        const metric = metricSelect.value;
+        dashboardData.sort((a, b) => {
+            const av = parseFloat(a[metric]) || 0;
+            const bv = parseFloat(b[metric]) || 0;
+            return currentSort === 'asc' ? av - bv : bv - av;
+        });
+    }
+
     function updateChart() {
         if (typeof Chart === 'undefined') { console.warn('Chart.js not loaded'); return; }
+        sortData();
         const metric = metricSelect.value;
-        const labels = aggregatedData.map(r => r['Customer Name']);
-        const data = aggregatedData.map(r => parseFloat(r[metric]) || 0);
-        chartWrap.style.height = Math.max(aggregatedData.length * 32, 300) + 'px';
+        const labels = dashboardData.map(r => r['Customer Name']);
+        const data = dashboardData.map(r => parseFloat(r[metric]) || 0);
+        chartWrap.style.height = Math.max(dashboardData.length * 32, 300) + 'px';
         if (chart) chart.destroy();
         chart = new Chart(document.getElementById('kpiChart').getContext('2d'), {
             type: 'bar',
@@ -1268,12 +1281,12 @@ function renderKpiDashboard() {
                 scales:{x:{ticks:{color:'#f1f1f1'}}, y:{ticks:{color:'#f1f1f1'}}}
             }
         });
-        window.addEventListener('resize', ()=>chart.resize());
+        window.addEventListener('resize', () => chart.resize());
     }
 
-    metricSelect.onchange = () => { if(typeof Chart!=='undefined') updateChart(); };
-    sortAsc.onclick = () => { aggregatedData.sort((a,b)=> (a[metricSelect.value]||0)-(b[metricSelect.value]||0)); if(typeof Chart!=='undefined') updateChart(); };
-    sortDesc.onclick = () => { aggregatedData.sort((a,b)=> (b[metricSelect.value]||0)-(a[metricSelect.value]||0)); if(typeof Chart!=='undefined') updateChart(); };
+    metricSelect.onchange = () => { currentSort = 'desc'; if(typeof Chart!=='undefined') updateChart(); };
+    sortAsc.onclick = () => { currentSort = 'asc'; if(typeof Chart!=='undefined') updateChart(); };
+    sortDesc.onclick = () => { currentSort = 'desc'; if(typeof Chart!=='undefined') updateChart(); };
     exportBtn.onclick = () => { if(chart) AppUtils.exportChartAsPng(chart,'kpi-chart.png'); };
     document.getElementById('toggleRiskHistory').onchange = function(){
         historyWrap.style.display = this.checked ? 'block' : 'none';
