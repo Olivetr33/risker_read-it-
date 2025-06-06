@@ -705,6 +705,12 @@ body {
   transform: translateY(-2px);
 }
 
+.footer-btn {
+  z-index: 10;
+  pointer-events: auto;
+  position: relative;
+}
+
 .log-level-select {
   background: none;
   color: #ffffff;

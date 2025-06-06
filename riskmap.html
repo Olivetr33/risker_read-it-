@@ -25,18 +25,18 @@
         <div class="sidebar">
             <nav class="sidebar-nav">
                 <ul>
-                    <li><button class="sidebar-btn sidebar-btn-layout" onclick="window.goToStart()">ShowData</button></li>
-                    <li><button class="sidebar-btn sidebar-btn-layout" onclick="window.triggerUpload()">Upload Data</button></li>
+                    <li><button class="sidebar-btn sidebar-btn-layout" data-target="goToStart">ShowData</button></li>
+                    <li><button class="sidebar-btn sidebar-btn-layout" data-target="triggerUpload">Upload Data</button></li>
                     <li><button class="sidebar-btn sidebar-btn-layout active" >📊 RiskMap</button></li>
-                    <li><button class="sidebar-btn sidebar-btn-layout" onclick="window.showArchive()">📋 Archive</button></li>
-                    <li><button class="sidebar-btn sidebar-btn-layout" id="kpiDashboardBtn" onclick="window.location.href='app.html'">📈 KPI Dashboard</button></li>
-                    <li><button class="sidebar-btn sidebar-btn-layout" id="workflowBtn" onclick="window.location.href='app.html'">🗂 Workflow</button></li>
+                    <li><button class="sidebar-btn sidebar-btn-layout" data-target="showArchive">📋 Archive</button></li>
+                    <li><button class="sidebar-btn sidebar-btn-layout" id="kpiDashboardBtn" data-target="showKpiDashboard">📈 KPI Dashboard</button></li>
+                    <li><button class="sidebar-btn sidebar-btn-layout" id="workflowBtn" data-target="toggleWorkflow">🗂 Workflow</button></li>
                 </ul>
             </nav>
             
             <div class="sidebar-footer">
-                <button class="sidebar-btn sidebar-btn-layout" onclick="window.saveCurrentSession()">💾 Save Session</button>
-                <button class="sidebar-btn sidebar-btn-layout logout-btn" onclick="window.performLogout()">
+                <button class="sidebar-btn sidebar-btn-layout" data-target="saveCurrentSession">💾 Save Session</button>
+                <button class="sidebar-btn sidebar-btn-layout logout-btn footer-btn" data-target="performLogout">
                     Logout & Clear Session
                 </button>
             </div>
@@ -1583,6 +1583,17 @@
         // DOM Ready
         document.addEventListener('DOMContentLoaded', function() {
             console.log('=== RiskMap DOM Ready ===');
+
+            document.querySelectorAll('.sidebar-btn[data-target]').forEach(function(btn){
+                btn.addEventListener('click', function(){
+                    var target = this.dataset.target;
+                    if(typeof window[target] === 'function'){
+                        window[target]();
+                    }else{
+                        console.warn('Missing target function for:', target);
+                    }
+                });
+            });
             
             loadRiskmapData();
             
