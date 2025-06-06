@@ -761,3 +761,7 @@ body {
 .note-btn { background: #555; }
 
 ::-webkit-scrollbar { width: 0; background: transparent; }
+
+.quicknote-has-content { background: orange; }
+.centered-btn { display:block; margin:10px auto; }
+

@@ -914,16 +914,17 @@ function renderTable(data) {
             if (col === 'Actions') {
                 const note = SessionManager.notes && SessionManager.notes[customerKey];
                 const preview = note ? note.text.substring(0,50) : '';
+                const noteClass = note && note.text ? ' quicknote-has-content' : '';
                 if (archiveMode) {
                     tableHTML += `<td>
                         <button class="table-action-btn remove-btn" onclick="removeFromArchive(${index})">Remove</button>
-                        <button class="table-action-btn note-btn" onclick="openNoteModal('${customerKey}')" title="${preview}">🗒</button>
+                        <button class="table-action-btn note-btn${noteClass}" onclick="openNoteModal('${customerKey}')" title="${preview}">🗒</button>
                     </td>`;
                 } else {
                     tableHTML += `<td>
                         <button class="table-action-btn" onclick="markAsDone(${index})" title="Archive this entry">Archive</button>
-                        <button class="table-action-btn" onclick="addCustomerToWorkflow(${index})" title="Add to Workflow">Add</button>
-                        <button class="table-action-btn note-btn" onclick="openNoteModal('${customerKey}')" title="${preview}">🗒</button>
+                        <button class="table-action-btn" onclick="addCustomerToWorkflow(${index})" title="Add to Workflow">➕ Add to Workflow</button>
+                        <button class="table-action-btn note-btn${noteClass}" onclick="openNoteModal('${customerKey}')" title="${preview}">🗒</button>
                     </td>`;
                 }
             } else if (col === 'ARR') {
@@ -978,7 +979,12 @@ window.markAsDone = function(index) {
             filteredData[originalIndex].done = true;
             filteredData[originalIndex].archived = true;
             filteredData[originalIndex].archivedAt = new Date().toISOString();
-            erledigtRows.push({...filteredData[originalIndex]});
+            const archivedEntry = {...filteredData[originalIndex]};
+            erledigtRows.push(archivedEntry);
+            if(!SessionManager.archivedRows) SessionManager.archivedRows = [];
+            if(!SessionManager.archivedRows.find(r => DataUtils.generateCustomerKey(r) === customerKey)){
+                SessionManager.archivedRows.push(archivedEntry);
+            }
             console.log(`Customer ${customerName} moved to archive`);
         }
         
@@ -1000,7 +1006,7 @@ window.markAsDone = function(index) {
             saveSession();
         }, 0);
 
-        showToast('Moved to archive.');
+        showToast('Customer archived successfully.');
         
         DebugLogger.add('info', `Customer marked as done: ${customerName}`);
         
@@ -1115,9 +1121,11 @@ function renderKpiDashboard() {
     });
 
     const sortAsc = document.createElement('button');
-    sortAsc.textContent = 'Sort ↑';
+    sortAsc.className = 'sort-btn';
+    sortAsc.textContent = '↑';
     const sortDesc = document.createElement('button');
-    sortDesc.textContent = 'Sort ↓';
+    sortDesc.className = 'sort-btn';
+    sortDesc.textContent = '↓';
     const exportBtn = document.createElement('button');
     exportBtn.textContent = '📤 Get Graphic';
     exportBtn.className = 'dashboard-export-btn';
@@ -1274,16 +1282,21 @@ function openNoteModal(key){
     const inner = document.getElementById('dialogInner');
     if(!bg || !inner) return;
     const note = (SessionManager.notes && SessionManager.notes[key]) || {text:'',timestamp:null};
+    const allRows = [...filteredData, ...aggregatedData, ...erledigtRows];
+    const row = allRows.find(r => DataUtils.generateCustomerKey(r) === key) || {};
+    const customerName = row['Customer Name'] || row['Kunde'] || row['Name'] || 'Customer';
     inner.innerHTML = `<h3>Quick Note</h3>
+        <div style="font-weight:bold;margin-bottom:6px;">${customerName} (${key})</div>
         <div id="noteEditor" contenteditable="true" style="min-height:100px;border:1px solid #555;padding:10px;border-radius:6px;">${note.text || ''}</div>
-        <div style="margin-top:6px;font-size:12px;color:#ccc;">${note.timestamp ? new Date(note.timestamp).toLocaleString() : ''}</div>
+        <div id="noteTimestamp" style="margin-top:6px;font-size:12px;color:#ccc;">${note.timestamp? '🕒 Last updated: '+new Date(note.timestamp).toLocaleString() : ''}</div>
         <button class="table-action-btn" id="saveNoteBtn">Save</button>
         <button class="table-action-btn" id="closeNoteBtn">Close</button>`;
     bg.style.display = 'flex';
     document.getElementById('saveNoteBtn').onclick = function(){
         const text = document.getElementById('noteEditor').innerHTML;
         if(!SessionManager.notes) SessionManager.notes = {};
-        SessionManager.notes[key] = {text, timestamp: Date.now()};
+        const ts = Date.now();
+        SessionManager.notes[key] = {text, timestamp: ts};
         saveSession();
         bg.style.display = 'none';
         renderTable(archiveMode ? erledigtRows : DataUtils.getActiveCustomers(filteredData));
@@ -1311,6 +1324,8 @@ function addWorkflowEntry(row){
         markInWorkflow(row);
         saveSession();
         renderWorkflowSidebar();
+        renderTable(DataUtils.getActiveCustomers(filteredData));
+        if(sliderOpen) updateSliderData();
         showToast('Added to Workflow.');
     }
 }
@@ -1392,7 +1407,7 @@ window.completeWorkflow = function(key){
     renderWorkflowSidebar();
     renderTable(DataUtils.getActiveCustomers(filteredData));
     if(sliderOpen) updateSliderData();
-    showToast('Moved to archive.');
+    showToast('Customer archived successfully.');
 };
 
 document.addEventListener('DOMContentLoaded', function() {

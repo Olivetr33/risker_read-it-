@@ -1123,7 +1123,7 @@
                         </td>
                         <td>
                             <button class="table-action-btn" onclick="markAsDoneRiskmap(${index})" title="Archive this entry">Archive</button>
-                            <button class="table-action-btn" onclick="addToWorkflowRiskmap(${index})" title="Add to Workflow">Add</button>
+                            <button class="table-action-btn" onclick="addToWorkflowRiskmap(${index})" title="Add to Workflow">➕ Add to Workflow</button>
                         </td>
                     </tr>
                 `;
@@ -1186,7 +1186,11 @@
                         if (!sessionData.erledigtRows) {
                             sessionData.erledigtRows = [];
                         }
+                        if (!sessionData.archivedRows) {
+                            sessionData.archivedRows = [];
+                        }
                         sessionData.erledigtRows.push(archivedCustomer);
+                        sessionData.archivedRows.push(archivedCustomer);
                         
                         const dataArrays = ['excelData', 'filteredData', 'aggregatedData', 'originalAggregatedData'];
                         
@@ -1229,7 +1233,6 @@
                 
             } catch (error) {
                 console.error('=== RiskMap Archive ERROR ===', error);
-                alert('Fehler beim Verschieben ins Archive. Bitte versuche es erneut.');
             }
         }
 
@@ -1278,6 +1281,8 @@
                 sd.workflowEntries[key] = entry;
                 localStorage.setItem(k, JSON.stringify(sd));
             });
+            riskmapData.splice(index,1);
+            updateRiskmapDisplay();
             showToast('Added to Workflow.');
         }
 
@@ -1298,6 +1303,9 @@
                 sd.workflowEntries[key] = entry;
                 localStorage.setItem(k, JSON.stringify(sd));
             });
+            const radarData = getRadarData();
+            radarData.splice(idx,1);
+            renderRadarTable();
             showToast('Added to Workflow.');
         }
 
@@ -1464,7 +1472,7 @@
                     `<td class="radar-actions">` +
                         `<button class="table-action-btn" onclick="markAsDoneRiskmap(${riskmapData.indexOf(row)})" title="Archive this entry">Archive</button>` +
                         `<button class="todo-btn" onclick="toggleRadarDetail(${i})" title="Show details">Get To-Do</button>` +
-                        `<button class="table-action-btn" onclick="addToWorkflowRadar(${i})" title="Add to Workflow">Add</button>` +
+                        `<button class="table-action-btn" onclick="addToWorkflowRadar(${i})" title="Add to Workflow">➕ Add to Workflow</button>` +
                     `</td>` +
                 `</tr>`;
 
@@ -1472,7 +1480,7 @@
             });
 
             html += '</tbody></table>';
-            html += '<button class="radar-close" onclick="hideRadarPopup()">Close</button>';
+            html += '<button class="radar-close centered-btn" onclick="hideRadarPopup()">Close</button>';
 
             const inner = document.getElementById('radarContent');
             if (inner) inner.innerHTML = html;
