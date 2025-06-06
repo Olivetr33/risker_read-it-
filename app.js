@@ -1586,6 +1586,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 faqBtn.onclick = showFaqModal;
             }
 
+            document.querySelectorAll('.sidebar-btn[data-target]').forEach(btn => {
+                btn.addEventListener('click', function(){
+                    const target = this.dataset.target;
+                    if (typeof window[target] === 'function') {
+                        window[target]();
+                    } else {
+                        console.warn('Missing target function for:', target);
+                    }
+                });
+            });
+
             const faqBg = document.getElementById('faqPopupBg');
             if (faqBg) {
                 faqBg.addEventListener('click', function(e){

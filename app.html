@@ -29,18 +29,18 @@
         <div class="sidebar">
             <nav class="sidebar-nav">
                 <ul>
-                    <li><button class="sidebar-btn sidebar-btn-layout active" id="startBtn">ShowData</button></li>
-                    <li><button class="sidebar-btn sidebar-btn-layout" id="uploadDataBtn">Upload Data</button></li>
-                    <li><button class="sidebar-btn sidebar-btn-layout" id="heatmapBtn">📊 RiskMap</button></li>
-                    <li><button class="sidebar-btn sidebar-btn-layout" id="archiveBtn">📋 Archive</button></li>
-                    <li><button class="sidebar-btn sidebar-btn-layout" id="kpiDashboardBtn">📈 KPI Dashboard</button></li>
-                    <li><button class="sidebar-btn sidebar-btn-layout" id="workflowBtn">🗂 Workflow</button></li>
+                    <li><button class="sidebar-btn sidebar-btn-layout active" id="startBtn" data-target="goToStart">ShowData</button></li>
+                    <li><button class="sidebar-btn sidebar-btn-layout" id="uploadDataBtn" data-target="triggerUpload">Upload Data</button></li>
+                    <li><button class="sidebar-btn sidebar-btn-layout" id="heatmapBtn" data-target="openHeatmap">📊 RiskMap</button></li>
+                    <li><button class="sidebar-btn sidebar-btn-layout" id="archiveBtn" data-target="showArchive">📋 Archive</button></li>
+                    <li><button class="sidebar-btn sidebar-btn-layout" id="kpiDashboardBtn" data-target="showKpiDashboard">📈 KPI Dashboard</button></li>
+                    <li><button class="sidebar-btn sidebar-btn-layout" id="workflowBtn" data-target="toggleWorkflow">🗂 Workflow</button></li>
                 </ul>
             </nav>
             
             <div class="sidebar-footer">
-                <button class="sidebar-btn sidebar-btn-layout" id="saveSessionBtn">💾 Save Session</button>
-                <button class="sidebar-btn sidebar-btn-layout logout-btn" id="logoutBtn">
+                <button class="sidebar-btn sidebar-btn-layout" id="saveSessionBtn" data-target="saveCurrentSession">💾 Save Session</button>
+                <button class="sidebar-btn sidebar-btn-layout logout-btn footer-btn" id="logoutBtn" data-target="performLogout">
                     Logout & Clear Session
                 </button>
             </div>
@@ -108,7 +108,7 @@
         <div class="footer-content-transparent">
             <div class="footer-button-group">
                 <a href="https://github.com/Olivetr33/No-More-Risk-" target="_blank" rel="noopener" class="github-link">GitHub</a>
-                <button class="faq-footer-btn" id="faqBtn">FAQ</button>
+                <button class="faq-footer-btn footer-btn" id="faqBtn" data-target="showFaqModal">FAQ</button>
                 <div class="debug-dropdown">
                     <button class="footer-link">Debug Log</button>
                     <div class="dropdown-menu">

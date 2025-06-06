@@ -4,6 +4,7 @@
         info: global.console.info ? global.console.info.bind(global.console) : global.console.log.bind(global.console),
         warn: global.console.warn ? global.console.warn.bind(global.console) : global.console.log.bind(global.console),
         error: global.console.error ? global.console.error.bind(global.console) : global.console.log.bind(global.console),
+        debug: global.console.debug ? global.console.debug.bind(global.console) : global.console.log.bind(global.console)
     };
 
     const levels = { debug: 0, info: 1, warn: 2, error: 3, none: 4 };
@@ -54,7 +55,15 @@
     function log(level, args){
         const ts = new Date().toISOString();
         logs.push({timestamp: ts, level, message: args.join(' ')});
-        if(isEnabled(levels[level], level)) origConsole[level](...args);
+        if(isEnabled(levels[level], level)) {
+            if (typeof origConsole[level] === 'function') {
+                origConsole[level](...args);
+            } else if (typeof origConsole.log === 'function') {
+                origConsole.log(...args);
+            } else {
+                global.console.error('Logger error: Missing method:', level);
+            }
+        }
         display();
     }
 
