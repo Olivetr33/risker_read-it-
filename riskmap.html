@@ -1124,8 +1124,8 @@
                 
                 tableHTML += `
                     <tr>
-                        <td>${customerName}</td>
-                        <td>${lcsm}</td>
+                        <td>${AppUtils.escapeHtml(customerName)}</td>
+                        <td>${AppUtils.escapeHtml(lcsm)}</td>
                         <td>€${arr.toLocaleString()}</td>
                         <td>${risk.toFixed(1)}</td>
                         <td>
@@ -1366,14 +1366,14 @@
                             </div>
                         </div>`;
             html += '<table class="radar-details-table"><tbody>';
-            if (name !== null) html += `<tr><td>Customer Name</td><td>${name}</td></tr>`;
-            if (number !== null) html += `<tr><td>Customer Number</td><td>${number}</td></tr>`;
-            if (lcsm !== null) html += `<tr><td>LCSM</td><td>${lcsm}</td></tr>`;
+            if (name !== null) html += `<tr><td>Customer Name</td><td>${AppUtils.escapeHtml(name)}</td></tr>`;
+            if (number !== null) html += `<tr><td>Customer Number</td><td>${AppUtils.escapeHtml(number)}</td></tr>`;
+            if (lcsm !== null) html += `<tr><td>LCSM</td><td>${AppUtils.escapeHtml(lcsm)}</td></tr>`;
             if (arrVal !== null) html += `<tr><td>ARR</td><td>€${parseFloat(arrVal).toLocaleString()}</td></tr>`;
             if (!isNaN(totalRisk)) html += `<tr><td>Total Risk</td><td>${totalRisk.toFixed(1)}</td></tr>`;
-            if (lastContact) html += `<tr><td>Last Contact</td><td>${lastContact}</td></tr>`;
-            if (lastSuccess) html += `<tr><td>Last Success Check</td><td>${lastSuccess}</td></tr>`;
-            if (renewal) html += `<tr><td>Contract Renewal Date</td><td>${renewal}</td></tr>`;
+            if (lastContact) html += `<tr><td>Last Contact</td><td>${AppUtils.escapeHtml(lastContact)}</td></tr>`;
+            if (lastSuccess) html += `<tr><td>Last Success Check</td><td>${AppUtils.escapeHtml(lastSuccess)}</td></tr>`;
+            if (renewal) html += `<tr><td>Contract Renewal Date</td><td>${AppUtils.escapeHtml(renewal)}</td></tr>`;
             html += '</tbody></table>';
 
             const recs = [];

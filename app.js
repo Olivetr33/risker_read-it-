@@ -1,6 +1,6 @@
 // app.js - KORRIGIERT: Synchrone ultra-robuste Zahlenextraktion
 
-const { DebugLogger, AutoSave, DataUtils, SessionManager, FileInputUtils, PrivacyUtils } = window.AppUtils;
+const { DebugLogger, AutoSave, DataUtils, SessionManager, FileInputUtils, PrivacyUtils, escapeHtml } = window.AppUtils;
 
 let excelData = [];
 let headers = [];
@@ -639,8 +639,8 @@ function renderSliderTable() {
         
         tableHTML += `
             <tr>
-                <td>${customerName}</td>
-                <td>${lcsm}</td>
+                <td>${escapeHtml(customerName)}</td>
+                <td>${escapeHtml(lcsm)}</td>
                 <td>€${arr.toLocaleString()}</td>
                 <td>${risk.toFixed(1)}</td>
                 <td>
@@ -937,9 +937,9 @@ function renderTable(data) {
                 tableHTML += `<td>€${arr.toLocaleString()}</td>`;
             } else if (col === 'Customer Name') {
                 const customerName = row['Customer Name'] || row['Kunde'] || row['Kundenname'] || row['Customer'] || row['Name'] || 'Unknown';
-                tableHTML += `<td>${customerName}</td>`;
+                tableHTML += `<td>${escapeHtml(customerName)}</td>`;
             } else {
-                tableHTML += `<td>${row[col] || ''}</td>`;
+                tableHTML += `<td>${escapeHtml(row[col] || '')}</td>`;
             }
         });
         tableHTML += '</tr>';
