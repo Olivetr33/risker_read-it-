@@ -942,3 +942,20 @@ body {
 .quicknote-overlay {
     z-index: 5000;
 }
+
+#radarTableContainer {
+  max-height: calc(100vh - var(--footer-height));
+  overflow-y: auto;
+  padding-bottom: 100px;
+}
+
+#quickNoteSlider {
+  z-index: 999;
+  position: fixed;
+  right: 0;
+  top: 0;
+  height: 100%;
+  width: 400px;
+  background-color: #1a1a1a;
+  box-shadow: -2px 0 10px rgba(255,210,33,0.3);
+}

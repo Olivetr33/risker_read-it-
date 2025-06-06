@@ -1500,10 +1500,8 @@
             });
 
             html += '</tbody></table>';
-            html += '<button class="radar-close centered-btn" onclick="hideRadarPopup()">Close</button>';
-
-            const inner = document.getElementById('radarContent');
-            if (inner) inner.innerHTML = html;
+            const container = document.getElementById('radarTableContainer');
+            if (container) container.innerHTML = html;
 
             const sortHeader = document.getElementById('radarSort');
             if (sortHeader) {
@@ -1680,7 +1678,10 @@
         <h2>Top 10 Radar</h2>
         <button id="closeRadarBtn" class="close-slider-btn">×</button>
       </div>
-      <div class="slider-content" id="radarContent"></div>
+      <div class="slider-content" id="radarContent">
+        <div id="radarTableContainer"></div>
+        <button class="radar-close centered-btn" onclick="hideRadarPopup()">Close</button>
+      </div>
     </div>
 
     <div id="toastContainer" class="toast-container"></div>
