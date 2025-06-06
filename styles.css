@@ -791,4 +791,29 @@ body {
 .quicknote-popup{position:fixed;top:50px;right:20px;width:420px;z-index:2000;}
 .quicknote-content{resize:none;height:180px;overflow-y:auto;}
 .debug-btn{margin-left:auto;}
+.footer-button-group {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+}
+
+.debug-dropdown {
+  position: relative;
+}
+
+.dropdown-menu {
+  display: none;
+  position: absolute;
+  top: 36px;
+  right: 0;
+  background: #23272b;
+  border-radius: 8px;
+  padding: 10px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.debug-dropdown:hover .dropdown-menu {
+  display: block;
+}
 .workflow-table td,.workflow-table th{text-align:center;vertical-align:middle;}

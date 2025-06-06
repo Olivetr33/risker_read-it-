@@ -1590,17 +1590,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             }
 
-            const logSelect = document.getElementById('logLevelSelect');
-            if (logSelect && window.Logger) {
-                logSelect.value = Logger.getLevel();
-                logSelect.addEventListener('change', function(){
-                    Logger.saveLevel(this.value);
+            const debugDropdown = document.querySelector('.debug-dropdown');
+            if (debugDropdown && window.AppUtils && AppUtils.DebugLogger && window.Logger) {
+                const downloadBtn = debugDropdown.querySelector('button');
+                if(downloadBtn){
+                    downloadBtn.onclick = AppUtils.DebugLogger.download.bind(AppUtils.DebugLogger);
+                }
+                debugDropdown.addEventListener('change', function(e){
+                    if(e.target.matches('input[type="checkbox"]')){
+                        Logger.setFilter(e.target.value, e.target.checked);
+                        AppUtils.DebugLogger.setFilter(e.target.value, e.target.checked);
+                    }
                 });
-            }
-
-            const debugBtn = document.getElementById('debugBtn');
-            if (debugBtn && window.AppUtils && AppUtils.DebugLogger) {
-                debugBtn.onclick = AppUtils.DebugLogger.download.bind(AppUtils.DebugLogger);
             }
 
             updateTableVisibility();

@@ -227,6 +227,12 @@ window.AppUtils = {
 
     DebugLogger: {
         logs: [],
+        filters: { debug: true, info: true, warn: true, error: true },
+        setFilter: function(level, enabled){
+            if(this.filters.hasOwnProperty(level)){
+                this.filters[level] = !!enabled;
+            }
+        },
         add: function(level, message, data = null) {
             const timestamp = new Date().toISOString();
             const logEntry = {
@@ -236,16 +242,20 @@ window.AppUtils = {
                 data: data ? JSON.stringify(data) : null
             };
             this.logs.push(logEntry);
-            console.log(`[${level.toUpperCase()}] ${timestamp}: ${message}`, data);
+            if(this.filters[level] !== false){
+                console.log(`[${level.toUpperCase()}] ${timestamp}: ${message}`, data);
+            }
             
             if (this.logs.length > 1000) {
                 this.logs = this.logs.slice(-1000);
             }
         },
         download: function() {
-            const logContent = this.logs.map(entry => 
-                `[${entry.timestamp}] ${entry.level.toUpperCase()}: ${entry.message}${entry.data ? ' | Data: ' + entry.data : ''}`
-            ).join('\n');
+            const logContent = this.logs
+                .filter(entry => this.filters[entry.level] !== false)
+                .map(entry =>
+                    `[${entry.timestamp}] ${entry.level.toUpperCase()}: ${entry.message}${entry.data ? ' | Data: ' + entry.data : ''}`
+                ).join('\n');
             
             const blob = new Blob([logContent], { type: 'text/plain' });
             const url = URL.createObjectURL(blob);
