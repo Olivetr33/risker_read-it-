@@ -651,6 +651,32 @@ window.AppUtils = {
         reader.readAsArrayBuffer(file);
     },
 
+    handleSessionUpload: function(file, onSuccess, onError) {
+        if (!file || !/\.json$/i.test(file.name)) {
+            if (onError) onError(new Error('Invalid file type'));
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            try {
+                const data = JSON.parse(event.target.result);
+                const existing = window.AppUtils.SessionManager.restore() || {};
+                const merged = Object.assign({}, existing, data);
+                window.AppUtils.SessionManager.save(merged);
+                if (onSuccess) onSuccess(merged);
+            } catch (err) {
+                if (onError) onError(err);
+            }
+        };
+
+        reader.onerror = function(err) {
+            if (onError) onError(err);
+        };
+
+        reader.readAsText(file);
+    },
+
     calculateContractRisk: function(contractDate) {
         if (!contractDate) return 0;
         const now = new Date();
@@ -740,9 +766,45 @@ function bindQuickNoteButtons() {
     });
 }
 
+function handleSidebarNavigationClick() {
+    const target = this.dataset.target;
+    if (target && typeof window[target] === 'function') {
+        window[target]();
+    } else {
+        console.warn('Missing target function for:', target);
+    }
+}
+
+function setupSidebarNavigation() {
+    document.querySelectorAll('.sidebar-btn[data-target]').forEach(btn => {
+        btn.removeEventListener('click', handleSidebarNavigationClick);
+        btn.addEventListener('click', handleSidebarNavigationClick);
+    });
+}
+
+function highlightSidebarButton(buttonId) {
+    document.querySelectorAll('.sidebar-btn').forEach(btn => btn.classList.remove('active'));
+    const btn = document.getElementById(buttonId);
+    if (btn) btn.classList.add('active');
+}
+
+function renderRiskMap() {
+    if (typeof loadRiskmapData === 'function') {
+        loadRiskmapData();
+    } else {
+        window.location.href = 'riskmap.html';
+    }
+}
+
 window.handleQuickNoteOpen = handleQuickNoteOpen;
 window.bindQuickNoteButtons = bindQuickNoteButtons;
+window.setupSidebarNavigation = setupSidebarNavigation;
+window.highlightSidebarButton = highlightSidebarButton;
+window.renderRiskMap = renderRiskMap;
 
 if (typeof document !== 'undefined') {
-    document.addEventListener('DOMContentLoaded', bindQuickNoteButtons);
+    document.addEventListener('DOMContentLoaded', () => {
+        bindQuickNoteButtons();
+        setupSidebarNavigation();
+    });
 }

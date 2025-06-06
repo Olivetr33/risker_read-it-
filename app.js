@@ -339,6 +339,7 @@ window.openHeatmap = function() {
     if (aggregatedData && aggregatedData.length > 0) {
         console.log('Opening RiskMap from app.html');
         window.location.href = "riskmap.html";
+        highlightSidebarButton('heatmapBtn');
     } else {
         alert('Please upload and process data first before viewing the RiskMap.');
     }
@@ -853,6 +854,8 @@ function handleFile(event) {
 
             console.log('=== APP: File Upload SUCCESS ===');
             alert(`File uploaded successfully: ${extractedData.length} customers processed`);
+            renderRiskMap();
+            highlightSidebarButton('heatmapBtn');
         }
         uploadInProgress = false;
     } catch (error) {
@@ -1603,6 +1606,7 @@ function renderWorkflowSidebar(){
     });
     table.innerHTML = html;
     bindQuickNoteButtons();
+    setupSidebarNavigation();
 }
 
 function markWorkflowItemDone(entryId){
@@ -1650,16 +1654,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.warn('❌ fileInput not found in DOM');
     }
 
-    document.querySelectorAll('.sidebar-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const view = btn.getAttribute('data-target');
-            if (view && typeof window[view] === 'function') {
-                window[view]();
-            } else {
-                console.warn('Missing or invalid view function:', view);
-            }
-        });
-    });
+    setupSidebarNavigation();
     
     let attempts = 0;
     const maxAttempts = 20;
@@ -1800,16 +1795,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 faqBtn.onclick = showFaqModal;
             }
 
-            document.querySelectorAll('.sidebar-btn[data-target]').forEach(btn => {
-                btn.addEventListener('click', function(){
-                    const target = this.dataset.target;
-                    if (typeof window[target] === 'function') {
-                        window[target]();
-                    } else {
-                        console.warn('Missing target function for:', target);
-                    }
-                });
-            });
+            setupSidebarNavigation();
 
             const faqBg = document.getElementById('faqPopupBg');
             if (faqBg) {
