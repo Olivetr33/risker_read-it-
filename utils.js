@@ -585,22 +585,33 @@ window.AppUtils = {
                 let json = null;
                 for (const sheetName of workbook.SheetNames) {
                     const tempSheet = workbook.Sheets[sheetName];
-                    const tempJson = XLSX.utils.sheet_to_json(tempSheet, {
+                    const rows = XLSX.utils.sheet_to_json(tempSheet, {
                         header: 1,
                         raw: false,
                         defval: '',
                         blankrows: false
                     });
-                    const validRows = tempJson.slice(1).filter(row =>
+                    if (!rows.length) continue;
+
+                    let headerIndex = rows.findIndex(r =>
+                        r.some(cell =>
+                            cell !== undefined &&
+                            cell !== null &&
+                            cell.toString().trim() !== ''
+                        )
+                    );
+                    if (headerIndex === -1) continue;
+                    const dataRows = rows.slice(headerIndex + 1).filter(row =>
                         row.some(cell =>
                             cell !== undefined &&
                             cell !== null &&
                             cell.toString().trim() !== ''
                         )
                     );
-                    if (validRows.length > 0) {
+
+                    if (dataRows.length > 0) {
                         chosenWorksheet = tempSheet;
-                        json = [tempJson[0], ...validRows];
+                        json = [rows[headerIndex], ...dataRows];
                         break;
                     }
                 }
