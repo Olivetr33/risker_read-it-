@@ -712,3 +712,32 @@ window.AppUtils = {
         }
     }
 };
+
+// ============================================================================
+// Global QuickNote binding helpers
+// ============================================================================
+
+function handleQuickNoteOpen(e) {
+    const id = e.currentTarget.dataset.customer;
+    if (!id) return;
+    console.log('\u{1F4CC} Opening QuickNote for:', id);
+    if (window.QuickNote && typeof window.QuickNote.render === 'function') {
+        window.QuickNote.render(id);
+    }
+    const slider = document.getElementById('quickNoteSlider');
+    if (slider) slider.classList.add('visible');
+}
+
+function bindQuickNoteButtons() {
+    document.querySelectorAll('.quicknote-btn').forEach(btn => {
+        btn.removeEventListener('click', handleQuickNoteOpen);
+        btn.addEventListener('click', handleQuickNoteOpen);
+    });
+}
+
+window.handleQuickNoteOpen = handleQuickNoteOpen;
+window.bindQuickNoteButtons = bindQuickNoteButtons;
+
+if (typeof document !== 'undefined') {
+    document.addEventListener('DOMContentLoaded', bindQuickNoteButtons);
+}
