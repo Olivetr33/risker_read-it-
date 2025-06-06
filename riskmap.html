@@ -957,6 +957,7 @@
         // RiskMap State
         let riskmapData = [];
         let currentSort = { column: 'Total Risk', direction: 'desc' };
+        let renderTableFrame;
 
         // Upload state locks
         let isUploadDialogOpen = false;
@@ -966,36 +967,35 @@
         function loadRiskmapData() {
             console.log('=== RiskMap Data Loading Started ===');
 
-            if (typeof localStorage === 'undefined') {
-                console.warn('RiskMap: localStorage not available');
-                showNoDataMessage();
-                return;
-            }
-            
             try {
-                const allKeys = ['riskerSessionData', 'sessionData', 'appData'];
-                let sessionData = null;
-                let foundKey = null;
-                
-                for (const key of allKeys) {
-                    try {
-                        const data = localStorage.getItem(key);
-                        if (data && data.length > 10) {
-                            const parsedData = JSON.parse(data);
-                            if (parsedData && (parsedData.aggregatedData || parsedData.filteredData || parsedData.excelData)) {
-                                sessionData = parsedData;
-                                foundKey = key;
-                                console.log(`RiskMap: Found valid session data in key: ${key}`);
-                                break;
-                            }
-                        }
-                    } catch (e) {
-                        console.warn(`RiskMap: Failed to parse key ${key}:`, e);
-                    }
-                }
-                
+                let sessionData = AppUtils.SessionManager.restore();
+                let foundKey = 'SessionManager.restore()';
+
                 if (!sessionData) {
-                    console.warn('RiskMap: No session data found in any key');
+                    console.warn('RiskMap: restore() returned no data, falling back to direct keys');
+                    const allKeys = ['riskerSessionData', 'sessionData', 'appData'];
+                    for (const key of allKeys) {
+                        try {
+                            const data = localStorage.getItem(key);
+                            if (data && data.length > 10) {
+                                const parsedData = JSON.parse(data);
+                                if (parsedData && (parsedData.aggregatedData || parsedData.filteredData || parsedData.excelData)) {
+                                    sessionData = parsedData;
+                                    foundKey = key;
+                                    console.log(`RiskMap: Found valid session data in key: ${key}`);
+                                    break;
+                                }
+                            }
+                        } catch (e) {
+                            console.warn(`RiskMap: Failed to parse key ${key}:`, e);
+                        }
+                    }
+                } else {
+                    console.log(`RiskMap: Session restored from ${foundKey}`);
+                }
+
+                if (!sessionData) {
+                    console.warn('RiskMap: No session data found');
                     showNoDataMessage();
                     return;
                 }
@@ -1065,7 +1065,7 @@
         function updateRiskmapDisplay() {
             console.log('RiskMap: Updating display with', riskmapData.length, 'customers');
             updateStats();
-            renderRiskmapTable();
+            scheduleRenderRiskmapTable();
             updateSortButtons();
         }
 
@@ -1083,6 +1083,11 @@
             document.getElementById('totalCustomers').textContent = totalCustomers;
             document.getElementById('highRiskCustomers').textContent = highRiskCustomers;
             document.getElementById('totalARR').textContent = `€${totalARR.toLocaleString()}`;
+        }
+
+        function scheduleRenderRiskmapTable(){
+            if(renderTableFrame) cancelAnimationFrame(renderTableFrame);
+            renderTableFrame = requestAnimationFrame(renderRiskmapTable);
         }
 
         function renderRiskmapTable() {
@@ -1389,7 +1394,7 @@
             }
             
             updateSortButtons();
-            renderRiskmapTable();
+            scheduleRenderRiskmapTable();
         }
 
         function sortByRisk() {
@@ -1401,7 +1406,7 @@
             }
             
             updateSortButtons();
-            renderRiskmapTable();
+            scheduleRenderRiskmapTable();
         }
 
         let updateSortFrame;
