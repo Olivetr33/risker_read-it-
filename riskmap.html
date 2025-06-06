@@ -119,6 +119,12 @@
     <div class="footer-transparent" id="footerTransparent">
         <div class="footer-content-transparent">
             <a href="https://github.com/Olivetr33/No-More-Risk-" target="_blank" rel="noopener" class="github-link">GitHub</a>
+            <select id="logLevelSelect" class="log-level-select">
+                <option value="debug">Debug</option>
+                <option value="info">Info</option>
+                <option value="warn">Warn</option>
+                <option value="error">Error</option>
+            </select>
         </div>
     </div>
 
@@ -1596,6 +1602,14 @@
             }
             const closeRadarBtn = document.getElementById('closeRadarBtn');
             if (closeRadarBtn) closeRadarBtn.onclick = hideRadarPopup;
+
+            const logSelect = document.getElementById('logLevelSelect');
+            if (logSelect && window.Logger) {
+                logSelect.value = Logger.getLevel();
+                logSelect.addEventListener('change', function(){
+                    Logger.saveLevel(this.value);
+                });
+            }
 
             setTimeout(updateSortButtons, 500);
             setTimeout(updateSortButtons, 1000);
