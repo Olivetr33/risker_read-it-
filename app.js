@@ -374,6 +374,11 @@ window.triggerUpload = function() {
 };
 
 window.performLogout = function() {
+    if (!confirm('Clear all data?')) {
+        console.log('Logout cancelled by user');
+        return;
+    }
+
     console.log('=== VOLLSTÄNDIGER Logout & Session Clear gestartet ===');
     
     try {
