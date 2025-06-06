@@ -1455,21 +1455,12 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM Content Loaded - Setting up event listeners...');
 
     // Ensure the file input properly triggers the upload handler
-    const directFileInput = document.querySelector('input[type="file"]');
-    if (directFileInput) {
-        directFileInput.addEventListener('change', (evt) => {
-            const f = evt.target.files?.[0];
-            if (!f) return console.warn('⚠️ No file selected');
-            console.log('📁 File selected:', f.name);
-            if (typeof XLSX?.read !== 'function') {
-                console.error('❌ XLSX library not loaded');
-                return;
-            }
-            handleFile(evt);
-        });
-        console.log('Direct file input listener attached');
+    const fileInput = document.getElementById('fileInput');
+    if (fileInput) {
+        fileInput.addEventListener('change', handleFile, false);
+        console.log('✅ DEBUG: File input listener correctly bound');
     } else {
-        console.error('❌ No file input found during DOMContentLoaded');
+        console.warn('❌ fileInput not found in DOM');
     }
 
     document.querySelectorAll('.sidebar-btn').forEach(btn => {
