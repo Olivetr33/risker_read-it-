@@ -720,12 +720,17 @@ window.AppUtils = {
 function handleQuickNoteOpen(e) {
     const id = e.currentTarget.dataset.customer;
     if (!id) return;
+    const ctx = e.currentTarget.closest('#workflowSidebar') ? 'workflow' : '';
     console.log('\u{1F4CC} Opening QuickNote for:', id);
-    if (window.QuickNote && typeof window.QuickNote.render === 'function') {
-        requestAnimationFrame(() => window.QuickNote.render(id));
-    }
-    const slider = document.getElementById('quickNoteSlider');
-    if (slider) slider.classList.add('visible');
+    requestAnimationFrame(() => {
+        if (window.openNoteModal) {
+            window.openNoteModal(id, ctx);
+        } else if (window.QuickNote && typeof window.QuickNote.render === 'function') {
+            window.QuickNote.render(id);
+        }
+        const slider = document.getElementById('quickNoteSlider');
+        if (slider) slider.classList.add('visible');
+    });
 }
 
 function bindQuickNoteButtons() {

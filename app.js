@@ -1379,7 +1379,7 @@ function showToast(message){
     },2500);
 }
 
-function openNoteModal(key) {
+function openNoteModal(key, ctx = '') {
     requestAnimationFrame(() => {
         let popup = document.getElementById('quickNoteSlider');
         if (!popup) {
@@ -1441,7 +1441,7 @@ function openNoteModal(key) {
             }
             popup.style.display = 'none';
             document.removeEventListener('click', outsideClick);
-            if (typeof updateRiskmapDisplay === 'function') updateRiskmapDisplay();
+            if (ctx !== 'workflow' && typeof updateRiskmapDisplay === 'function') updateRiskmapDisplay();
         }, 300);
         document.getElementById('closeNoteBtn').onclick = function() {
             popup.style.display = 'none';
@@ -1766,30 +1766,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             }
 
-            const debugDropdown = document.querySelector('.debug-dropdown');
-            if (debugDropdown && window.AppUtils && AppUtils.DebugLogger && window.Logger) {
-                const downloadBtn = debugDropdown.querySelector('button');
-                if(downloadBtn){
-                    downloadBtn.onclick = AppUtils.DebugLogger.download.bind(AppUtils.DebugLogger);
-                }
-                const debugBtn = document.getElementById('debugBtn');
-                if (debugBtn) {
-                    debugBtn.addEventListener('click', () => {
-                        const panel = document.getElementById('debugLogPanel');
-                        if(panel){
-                            panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
-                        }
-                    });
-                }
-                Logger.display();
-                debugDropdown.addEventListener('change', function(e){
-                    if(e.target.matches('input[type="checkbox"]')){
-                        Logger.setFilter(e.target.value, e.target.checked);
-                        AppUtils.DebugLogger.setFilter(e.target.value, e.target.checked);
-                        Logger.display();
-                    }
-                });
-            }
 
             updateTableVisibility();
             AutoSave.start(saveSession);
