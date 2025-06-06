@@ -727,68 +727,74 @@ function onFileInputChange(e) {
     reader.readAsArrayBuffer(file);
 }
 
-function handleFile(e) {
-    console.log('File upload initiated');
-    const data = e.target.result;
-    const workbook = XLSX.read(data, {
-        type: 'array',
-        cellDates: true,
-        dateNF: 'yyyy-mm-dd',
-        cellText: false,
-        cellNF: false
-    });
-    console.log('Workbook loaded:', workbook.SheetNames);
-
-    const validateHeaders = (headers) => {
-        const validHeaders = headers.filter(header => header && header.toString().trim() !== '');
-        console.log('Validated headers:', validHeaders);
-        if (validHeaders.length === 0) throw new Error('No valid headers found');
-        return validHeaders;
-    };
-
-    const validateData = (data) => {
-        console.log('Validating data rows:', data.length);
-        return data.filter(row => Object.values(row).some(cell => cell !== null && cell !== undefined));
-    };
-
-    const COLUMN_MAPPINGS = {
-        'LCSM': ['LCSM', 'lcsm', 'CSM', 'Manager', 'Account Manager'],
-        'Customer Name': ['Customer Name', 'Kunde', 'Name', 'Account', 'Customer'],
-        'Total Risk': ['Total Risk', 'Risk Score', 'Risiko', 'Risk', 'Total'],
-        'ARR': ['ARR', 'Revenue', 'Umsatz', 'Annual Revenue']
-    };
-
-    const findColumnMatch = (headers) => {
-        const mapping = {};
-        for (const [key, aliases] of Object.entries(COLUMN_MAPPINGS)) {
-            const matchedHeader = headers.find(h =>
-                aliases.some(alias => h.toString().toLowerCase() === alias.toLowerCase())
-            );
-            mapping[key] = matchedHeader;
-            console.log(`Mapping ${key} to ${matchedHeader}`);
-        }
-        return mapping;
-    };
-
-    function renderTable(data) {
-        console.log('Rendering table:', {
-            rowCount: data.length,
-            columnCount: data[0] ? Object.keys(data[0]).length : 0,
-            sampleRow: data[0]
-        });
-        // ...existing rendering code...
-    }
-
+function handleFile(event) {
     try {
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const json = XLSX.utils.sheet_to_json(sheet, {header: 1});
-        const headers = validateHeaders(json[0]);
-        const mapping = findColumnMatch(headers);
-        const data = validateData(json.slice(1));
-        renderTable(data);
+        console.log('=== APP: File Upload Started ===');
+
+        const data = new Uint8Array(event.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+
+        const sheet = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheet];
+        const json = XLSX.utils.sheet_to_json(worksheet, {
+            header: 1,
+            raw: false,
+            defval: '',
+            blankrows: false
+        });
+
+        headers = json[0].filter(header => header && header.toString().trim() !== '');
+        console.log('APP: Original headers found:', headers);
+
+        let rawData = json.slice(1).map((row, rowIndex) => {
+            let obj = {};
+            headers.forEach((header, i) => {
+                if (header && header.trim()) {
+                    obj[header] = row[i];
+                }
+            });
+            return obj;
+        }).filter(row => {
+            return Object.values(row).some(value =>
+                value !== undefined &&
+                value !== null &&
+                value !== '' &&
+                value.toString().trim() !== ''
+            );
+        });
+
+        const extractedData = extractCustomerData(rawData, headers);
+
+        if (extractedData.length > 0) {
+            excelData = extractedData;
+            aggregatedData = extractedData;
+            originalAggregatedData = [...extractedData];
+
+            filteredData = DataUtils.mergeSessionWithData(erledigtRows, extractedData);
+            selectedLCSM = 'ALL';
+
+            renderTable(DataUtils.getActiveCustomers(filteredData));
+            renderSortControls();
+            updateTableVisibility();
+
+            const archiveBar = document.getElementById('archiveUploadBar');
+            if (archiveBar) {
+                archiveBar.style.display = 'none';
+            }
+            archiveMode = false;
+
+            if (sliderOpen) {
+                updateSliderData();
+            }
+
+            saveSession();
+
+            console.log('=== APP: File Upload SUCCESS ===');
+            alert(`File uploaded successfully: ${extractedData.length} customers processed`);
+        }
     } catch (error) {
-        console.error('Import failed:', error);
-        alert('Failed to import file: ' + error.message);
+        console.error('APP: Processing error:', error);
+        alert(`File processing failed: ${error.message}`);
     }
 }
 function renderSortControls() {
