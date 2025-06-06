@@ -909,8 +909,10 @@
 
         window.triggerUpload = function() {
             console.log('Upload Data function called from RiskMap');
-            const fileInput = document.getElementById('fileInput');
+            const fileInput = AppUtils.FileInputUtils.reset('fileInput');
             if (fileInput) {
+                fileInput.addEventListener('change', handleFileUpload, false);
+                fileInput.value = '';
                 fileInput.click();
             }
         };
@@ -1487,103 +1489,54 @@
 
             console.debug('📁 File selected:', file.name, file.size);
 
-            console.log('=== RiskMap File Upload Started ===');
+            AppUtils.handleFileUpload(file, function(rawData, headers) {
+                console.log('=== RiskMap File Upload Started ===');
 
-            const reader = new FileReader();
-            reader.onload = function(event) {
-                console.debug('✅ FileReader loaded, size:', event.target.result.byteLength);
-                try {
-                    const data = new Uint8Array(event.target.result);
-                    
-                    const workbook = XLSX.read(data, { 
-                        type: 'array',
-                        cellText: false,
-                        cellNF: false,
-                        cellDates: false,
-                        raw: true
-                    });
-                    
-                    const sheet = workbook.SheetNames[0];
-                    const worksheet = workbook.Sheets[sheet];
-                    
-                    const json = XLSX.utils.sheet_to_json(worksheet, { 
-                        header: 1,
-                        raw: true,
-                        defval: null
-                    });
+                console.log(`RiskMap: Raw data extracted: ${rawData.length} rows`);
 
-                    const headers = json[0].filter(header => header && header.toString().trim() !== '');
-                    console.log('RiskMap: Original headers found:', headers);
-                    
-                    let rawData = json.slice(1).map((row, rowIndex) => {
-                        let obj = {};
-                        headers.forEach((header, i) => {
-                            if (header && header.trim()) {
-                                obj[header] = row[i];
-                            }
-                        });
-                        return obj;
-                    }).filter(row => {
-                        return Object.values(row).some(value => 
-                            value !== undefined && 
-                            value !== null && 
-                            value !== '' && 
-                            value.toString().trim() !== ''
-                        );
-                    });
+                const extractedData = extractCustomerDataRiskMap(rawData, headers);
+                console.log(`RiskMap: Extracted data: ${extractedData.length} customers`);
 
-                    console.log(`RiskMap: Raw data extracted: ${rawData.length} rows`);
-                    
-                    const extractedData = extractCustomerDataRiskMap(rawData, headers);
-                    console.log(`RiskMap: Extracted data: ${extractedData.length} customers`);
-                    
-                    if (extractedData.length > 0) {
-                        console.log('RiskMap: Sample extracted customer:', extractedData[0]);
-                        console.log('RiskMap: ARR values in first 5 customers:', extractedData.slice(0, 5).map(c => ({
-                            name: c['Customer Name'],
-                            arr: c.ARR,
-                            risk: c['Total Risk']
-                        })));
-                    }
-                    
-                    const sessionData = {
-                        excelData: rawData,
-                        filteredData: extractedData,
-                        aggregatedData: extractedData,
-                        originalAggregatedData: [...extractedData],
-                        selectedLCSM: null,
-                        erledigtRows: [],
-                        headers: headers,
-                        currentSort: { column: '', direction: 'desc' },
-                        archiveMode: false,
-                        timestamp: Date.now()
-                    };
-                    
-                    const allKeys = ['riskerSessionData', 'sessionData', 'appData'];
-                    for (const key of allKeys) {
-                        localStorage.setItem(key, JSON.stringify(sessionData));
-                        console.log(`RiskMap: Session data saved to key: ${key}`);
-                    }
-                    
-                    riskmapData = extractedData.filter(customer => !customer.erledigt);
-                    console.log('RiskMap: Updated local data:', riskmapData.length, 'customers');
-                    
-                    updateRiskmapDisplay();
-                    
-                    console.log('=== RiskMap File Upload SUCCESS ===');
-                    showNotification(`Datei erfolgreich hochgeladen: ${extractedData.length} Kunden mit korrekten ARR-Werten verarbeitet!`);
-                    
-                } catch (error) {
-                    console.error('❌ XLSX parsing failed:', error);
-                    alert(`Dateiverarbeitung fehlgeschlagen: ${error.message}`);
+                if (extractedData.length > 0) {
+                    console.log('RiskMap: Sample extracted customer:', extractedData[0]);
+                    console.log('RiskMap: ARR values in first 5 customers:', extractedData.slice(0, 5).map(c => ({
+                        name: c['Customer Name'],
+                        arr: c.ARR,
+                        risk: c['Total Risk']
+                    })));
                 }
-            };
 
-            reader.onerror = function(err) {
-                console.error('❌ FileReader error:', err);
-            };
+                const sessionData = {
+                    excelData: rawData,
+                    filteredData: extractedData,
+                    aggregatedData: extractedData,
+                    originalAggregatedData: [...extractedData],
+                    selectedLCSM: null,
+                    erledigtRows: [],
+                    headers: headers,
+                    currentSort: { column: '', direction: 'desc' },
+                    archiveMode: false,
+                    timestamp: Date.now()
+                };
 
-            reader.readAsArrayBuffer(file);
+                const allKeys = ['riskerSessionData', 'sessionData', 'appData'];
+                for (const key of allKeys) {
+                    localStorage.setItem(key, JSON.stringify(sessionData));
+                    console.log(`RiskMap: Session data saved to key: ${key}`);
+                }
+
+                riskmapData = extractedData.filter(customer => !customer.erledigt);
+                console.log('RiskMap: Updated local data:', riskmapData.length, 'customers');
+
+                updateRiskmapDisplay();
+
+                console.log('=== RiskMap File Upload SUCCESS ===');
+                showNotification(`Datei erfolgreich hochgeladen: ${extractedData.length} Kunden mit korrekten ARR-Werten verarbeitet!`);
+
+            }, function(error){
+                console.error('❌ XLSX parsing failed:', error);
+                alert(`Dateiverarbeitung fehlgeschlagen: ${error.message}`);
+            });
         }
 
         // DOM Ready
