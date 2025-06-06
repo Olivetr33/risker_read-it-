@@ -1397,7 +1397,7 @@ function openNoteModal(key){
             <h2 class="section-title">Quick Note</h2>
             <button class="close-slider-btn" id="closeNoteBtn">×</button>
         </div>
-        <div class="slider-content">
+        <div class="slider-content quicknote-container">
             <table class="data-table quick-note-table">
                 <thead><tr><th>Date</th><th>User</th><th>Note</th></tr></thead>
                 <tbody>${notesHtml}

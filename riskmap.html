@@ -1112,7 +1112,7 @@
                             </div>
                         </td>
                         <td>
-                            <button class="table-action-btn" onclick="markAsDoneRiskmap(${index})" title="Archive this entry">Archive</button>
+                            <button class="table-action-btn" onclick="archiveCustomerRiskmap(${index}, this)" title="Archive this entry">Archive</button>
                             <button class="table-action-btn" onclick="addToWorkflowRiskmap(${index})" title="Add to Workflow">➕ Add to Workflow</button>
                             ${(() => {
                                 const key = AppUtils.DataUtils.generateCustomerKey(customer);
@@ -1165,8 +1165,6 @@
                 });
 
                 riskmapData.splice(customerIndex,1);
-                updateRiskmapDisplay();
-                showNotification('Customer archived successfully.');
             } catch(e){ console.error('Archive error',e); }
         }
 
@@ -1200,6 +1198,25 @@
             }, 3000);
         }
 
+        const archiveCustomerRiskmap = (() => {
+            const handler = function(idx, btn) {
+                if (btn) {
+                    btn.setAttribute('disabled', 'true');
+                    btn.classList.add('archiving');
+                }
+                requestAnimationFrame(() => {
+                    markAsDoneRiskmap(idx);
+                    if (btn) {
+                        const row = btn.closest('tr');
+                        if (row) row.remove();
+                    }
+                    updateStats();
+                    showNotification('Customer archived successfully.');
+                });
+            };
+            return debounce(handler, 200);
+        })();
+
         function openNoteModal(index){
             const customer = riskmapData[index];
             if(!customer) return;
@@ -1222,7 +1239,7 @@
                     <h2 class="section-title">Quick Note</h2>
                     <button class="close-slider-btn" id="closeNoteBtn">×</button>
                 </div>
-                <div class="slider-content">
+                <div class="slider-content quicknote-container">
                     <table class="data-table quick-note-table">
                         <thead><tr><th>Date</th><th>User</th><th>Note</th></tr></thead>
                         <tbody>${notesHtml}
@@ -1305,8 +1322,8 @@
             showToast('Added to Workflow.');
         }
 
-        function archiveFromRadar(idx){
-            markAsDoneRiskmap(idx);
+        function archiveFromRadar(idx, btn){
+            archiveCustomerRiskmap(idx, btn);
             hideRadarPopup();
         }
 
@@ -1475,7 +1492,7 @@
                     `<td>€${arrVal.toLocaleString()}</td>` +
                     `<td>${risk.toFixed(1)}</td>` +
                     `<td class="radar-actions">` +
-                        `<button class="table-action-btn" onclick="archiveFromRadar(${riskmapData.indexOf(row)})" title="Archive this entry">Archive</button>` +
+                        `<button class="table-action-btn" onclick="archiveFromRadar(${riskmapData.indexOf(row)}, this)" title="Archive this entry">Archive</button>` +
                         `<button class="table-action-btn" onclick="addToWorkflowRadar(${i})" title="Add to Workflow">➕ Add to Workflow</button>` +
                     `</td>` +
                 `</tr>`;
