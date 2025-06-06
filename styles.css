@@ -844,6 +844,10 @@ body {
   padding:4px 8px;
   vertical-align:top;
 }
+.note-text-cell{
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
 .quicknote-save-btn{
   margin-top:12px;
   float:right;

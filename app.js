@@ -1371,7 +1371,7 @@ function openNoteModal(key){
     const allRows = [...filteredData, ...aggregatedData, ...erledigtRows];
     const row = allRows.find(r => DataUtils.generateCustomerKey(r) === key) || {};
     const user = row['LCSM'] || 'User';
-    const notesHtml = notes.map(n=>`<tr class="table-row"><td class="table-cell"><span class="note-timestamp">🕒 ${new Date(n.timestamp).toISOString().slice(0,16).replace('T',' ')}</span></td><td class="table-cell">${AppUtils.escapeHtml(user)}</td><td class="table-cell">${AppUtils.escapeHtml(n.text)}</td></tr>`).join('');
+    const notesHtml = notes.map(n=>`<tr class="table-row"><td class="table-cell"><span class="note-timestamp">🕒 ${new Date(n.timestamp).toISOString().slice(0,16).replace('T',' ')}</span></td><td class="table-cell">${AppUtils.escapeHtml(user)}</td><td class="table-cell note-text-cell">${AppUtils.escapeHtml(n.text)}</td></tr>`).join('');
     popup.innerHTML = `
         <div class="slider-header filter-header">
             <h2 class="section-title">Quick Note</h2>
@@ -1384,7 +1384,7 @@ function openNoteModal(key){
                     <tr class="table-row">
                         <td class="table-cell"></td>
                         <td class="table-cell">${AppUtils.escapeHtml(user)}</td>
-                        <td class="table-cell"><textarea id="noteEditor" class="quicknote-content quicknote-textarea"></textarea></td>
+                        <td class="table-cell note-text-cell"><textarea id="noteEditor" class="quicknote-content quicknote-textarea"></textarea></td>
                     </tr>
                 </tbody>
             </table>
