@@ -718,6 +718,7 @@
 
     <!-- KORRIGIERTES JavaScript - Mit IDENTISCHER extractNumber() Funktion wie in app.js -->
     <script>
+        const { DataUtils, SessionManager } = window.AppUtils;
         function saveCurrentSession(){
             try{
                 const data = localStorage.getItem('riskerSessionData');
@@ -738,6 +739,19 @@
 
         function closeAllSliders(){
             document.querySelectorAll('.slider-panel, .sidebar-slider').forEach(el=>el.classList.remove('active'));
+        }
+
+        function toggleFooter(hide){
+            const footer = document.getElementById('footerTransparent');
+            if(footer){
+                if(hide){
+                    footer.classList.add('hidden');
+                    console.log('Footer hidden');
+                }else{
+                    footer.classList.remove('hidden');
+                    console.log('Footer shown');
+                }
+            }
         }
         // KORRIGIERT: IDENTISCHE Spalten-Mapping wie in app.js
         const COLUMN_MAPPINGS = {
