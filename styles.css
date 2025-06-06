@@ -853,3 +853,28 @@ body {
   border-radius: 0 12px 12px 0;
 }
 .workflow-table td,.workflow-table th{text-align:center;vertical-align:middle;}
+
+/* Footer padding helper */
+.with-footer {
+  padding-bottom: 80px;
+}
+
+/* Floating debug log panel */
+.debug-log-panel {
+  position: fixed;
+  bottom: 80px;
+  right: 20px;
+  width: 300px;
+  max-height: 200px;
+  overflow-y: auto;
+  background: rgba(0, 0, 0, 0.85);
+  color: #fff;
+  padding: 10px;
+  border-radius: 8px;
+  z-index: 4000;
+}
+
+/* Remove sidebar highlight edge */
+.sidebar-btn-layout::after {
+  content: none !important;
+}

@@ -27,15 +27,15 @@
                 <ul>
                     <li><button class="sidebar-btn sidebar-btn-layout" data-target="goToStart">ShowData</button></li>
                     <li><button class="sidebar-btn sidebar-btn-layout" data-target="triggerUpload">Upload Data</button></li>
-                    <li><button class="sidebar-btn sidebar-btn-layout active" >📊 RiskMap</button></li>
-                    <li><button class="sidebar-btn sidebar-btn-layout" data-target="showArchive">📋 Archive</button></li>
-                    <li><button class="sidebar-btn sidebar-btn-layout" id="kpiDashboardBtn" data-target="showKpiDashboard">📈 KPI Dashboard</button></li>
-                    <li><button class="sidebar-btn sidebar-btn-layout" id="workflowBtn" data-target="toggleWorkflow">🗂 Workflow</button></li>
+                    <li><button class="sidebar-btn sidebar-btn-layout active" >RiskMap</button></li>
+                    <li><button class="sidebar-btn sidebar-btn-layout" data-target="showArchive">Archive</button></li>
+                    <li><button class="sidebar-btn sidebar-btn-layout" id="kpiDashboardBtn" data-target="showKpiDashboard">KPI Dashboard</button></li>
+                    <li><button class="sidebar-btn sidebar-btn-layout" id="workflowBtn" data-target="toggleWorkflow">Workflow</button></li>
                 </ul>
             </nav>
             
             <div class="sidebar-footer">
-                <button class="sidebar-btn sidebar-btn-layout" data-target="saveCurrentSession">💾 Save Session</button>
+                <button class="sidebar-btn sidebar-btn-layout" data-target="saveCurrentSession">Save Session</button>
                 <button class="sidebar-btn sidebar-btn-layout logout-btn footer-btn" data-target="performLogout">
                     Logout & Clear Session
                 </button>
@@ -43,7 +43,7 @@
         </div>
 
         <!-- Main Content -->
-        <div class="main-content slider-open" id="mainContent">
+        <div class="main-content slider-open with-footer" id="mainContent">
             <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" style="display: none;">
         </div>
 
@@ -122,7 +122,7 @@
             <div class="footer-button-group">
                 <a href="https://github.com/Olivetr33/No-More-Risk-" target="_blank" rel="noopener" class="github-link">GitHub</a>
                 <div class="debug-dropdown">
-                    <button class="footer-link">Debug Log</button>
+                    <button class="footer-link" id="debugBtn">Debug Log</button>
                     <div class="dropdown-menu">
                         <label><input type="checkbox" value="debug" checked> Debug</label>
                         <label><input type="checkbox" value="info" checked> Info</label>
@@ -132,7 +132,6 @@
                 </div>
             </div>
         </div>
-        <div id="debugLog" class="debug-log"></div>
     </div>
 
     <!-- Styles -->
@@ -1635,6 +1634,16 @@
                 });
             }
 
+            const debugBtn = document.getElementById('debugBtn');
+            if (debugBtn) {
+                debugBtn.addEventListener('click', function(){
+                    const panel = document.getElementById('debugLogPanel');
+                    if(panel){
+                        panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+                    }
+                });
+            }
+
             setTimeout(updateSortButtons, 500);
             setTimeout(updateSortButtons, 1000);
 
@@ -1650,5 +1659,9 @@
     </div>
 
     <div id="toastContainer" class="toast-container"></div>
+
+    <div id="debugLogPanel" class="debug-log-panel" style="display: none;">
+        <div id="debugLog" class="debug-log"></div>
+    </div>
 </body>
 </html>

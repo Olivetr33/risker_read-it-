@@ -1132,7 +1132,7 @@ function renderKpiDashboard() {
     sortDesc.className = 'sort-btn';
     sortDesc.textContent = '↓';
     const exportBtn = document.createElement('button');
-    exportBtn.textContent = '📤 Get Graphic';
+    exportBtn.textContent = 'Get Graphic';
     exportBtn.className = 'dashboard-export-btn sort-btn';
     const toggleHistory = document.createElement('label');
     toggleHistory.innerHTML = '<input type="checkbox" id="toggleRiskHistory"> Show Risk History';
@@ -1446,6 +1446,17 @@ window.completeWorkflow = function(key){
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM Content Loaded - Setting up event listeners...');
+
+    document.querySelectorAll('.sidebar-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const view = btn.getAttribute('data-target');
+            if (view && typeof window[view] === 'function') {
+                window[view]();
+            } else {
+                console.warn('Missing or invalid view function:', view);
+            }
+        });
+    });
     
     let attempts = 0;
     const maxAttempts = 20;
@@ -1609,6 +1620,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 const downloadBtn = debugDropdown.querySelector('button');
                 if(downloadBtn){
                     downloadBtn.onclick = AppUtils.DebugLogger.download.bind(AppUtils.DebugLogger);
+                }
+                const debugBtn = document.getElementById('debugBtn');
+                if (debugBtn) {
+                    debugBtn.addEventListener('click', () => {
+                        const panel = document.getElementById('debugLogPanel');
+                        if(panel){
+                            panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+                        }
+                    });
                 }
                 Logger.display();
                 debugDropdown.addEventListener('change', function(e){
