@@ -933,6 +933,12 @@
         // Daten-Loading mit flexibler Spaltenerkennung
         function loadRiskmapData() {
             console.log('=== RiskMap Data Loading Started ===');
+
+            if (typeof localStorage === 'undefined') {
+                console.warn('RiskMap: localStorage not available');
+                showNoDataMessage();
+                return;
+            }
             
             try {
                 const allKeys = ['riskerSessionData', 'sessionData', 'appData'];
@@ -1013,10 +1019,13 @@
                     </tr>
                 `;
             }
-            
-            document.getElementById('totalCustomers').textContent = '0';
-            document.getElementById('highRiskCustomers').textContent = '0';
-            document.getElementById('totalARR').textContent = '€0';
+
+            const totalCustomersEl = document.getElementById('totalCustomers');
+            if (totalCustomersEl) totalCustomersEl.textContent = '0';
+            const highRiskCustomersEl = document.getElementById('highRiskCustomers');
+            if (highRiskCustomersEl) highRiskCustomersEl.textContent = '0';
+            const totalARRel = document.getElementById('totalARR');
+            if (totalARRel) totalARRel.textContent = '€0';
         }
 
         function updateRiskmapDisplay() {
@@ -1563,9 +1572,6 @@
             console.log('=== RiskMap DOM Ready ===');
             
             loadRiskmapData();
-            setTimeout(loadRiskmapData, 500);
-            setTimeout(loadRiskmapData, 1000);
-            setTimeout(loadRiskmapData, 2000);
             
             const fileInput = document.getElementById('fileInput');
             if (fileInput) {
