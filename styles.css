@@ -795,6 +795,18 @@ body {
 .filter-bar{display:flex;gap:15px;flex-wrap:wrap;}
 .note-timestamp{white-space:nowrap;}
 .quicknote-popup{position:fixed;top:50px;right:20px;width:420px;z-index:2000;}
+.quicknote-panel{
+  background: rgba(10,10,10,0.98);
+  backdrop-filter: blur(25px);
+  color:#fff;
+  border-left:4px solid transparent;
+  border-image:linear-gradient(to bottom,transparent 0%,transparent 15%,rgba(255,210,33,0.3) 20%,rgba(255,210,33,0.8) 40%,#ffd221 50%,rgba(255,210,33,0.8) 60%,rgba(255,210,33,0.3) 80%,transparent 85%,transparent 100%) 1;
+  box-shadow:-30px 0 60px rgba(0,0,0,0.8),0 0 40px rgba(255,210,33,0.6),inset 0 0 40px rgba(255,210,33,0.15);
+  border-radius:25px 0 0 25px;
+  padding:20px;
+  max-height:calc(100vh - 120px);
+  overflow-y:auto;
+}
 .quicknote-content{resize:none;height:180px;overflow-y:auto;}
 .debug-btn{margin-left:auto;}
 .footer-button-group {

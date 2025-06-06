@@ -1161,6 +1161,16 @@
                         <td>
                             <button class="table-action-btn" onclick="markAsDoneRiskmap(${index})" title="Archive this entry">Archive</button>
                             <button class="table-action-btn" onclick="addToWorkflowRiskmap(${index})" title="Add to Workflow">➕ Add to Workflow</button>
+                            ${(() => {
+                                const key = AppUtils.DataUtils.generateCustomerKey(customer);
+                                const n = SessionManager.notes && SessionManager.notes[key];
+                                let preview = '';
+                                let hasNote = false;
+                                if(Array.isArray(n) && n.length){ preview = n[n.length-1].text.substring(0,50); hasNote = true; }
+                                else if(n && n.text){ preview = n.text.substring(0,50); hasNote = true; }
+                                const cls = hasNote ? ' quicknote-has-content' : '';
+                                return `<button class="table-action-btn note-btn${cls}" onclick="openNoteModal(${index})" title="${preview}">🗒</button>`;
+                            })()}
                         </td>
                     </tr>
                 `;
@@ -1234,6 +1244,65 @@
                     }, 300);
                 }
             }, 3000);
+        }
+
+        function openNoteModal(index){
+            const customer = riskmapData[index];
+            if(!customer) return;
+            const key = AppUtils.DataUtils.generateCustomerKey(customer);
+            let popup = document.getElementById('quicknotePopup');
+            if(!popup){
+                popup = document.createElement('div');
+                popup.id = 'quicknotePopup';
+                popup.className = 'quicknote-popup quicknote-panel';
+                document.body.appendChild(popup);
+            } else {
+                popup.className = 'quicknote-popup quicknote-panel';
+            }
+            const notesRaw = SessionManager.notes && SessionManager.notes[key];
+            const notes = Array.isArray(notesRaw) ? notesRaw : (notesRaw ? [notesRaw] : []);
+            const user = customer['LCSM'] || 'User';
+            const notesHtml = notes.map(n=>`<tr class="table-row"><td class="table-cell"><span class="note-timestamp">🕒 ${new Date(n.timestamp).toISOString().slice(0,16).replace('T',' ')}</span></td><td class="table-cell">${AppUtils.escapeHtml(user)}</td><td class="table-cell">${AppUtils.escapeHtml(n.text)}</td></tr>`).join('');
+            popup.innerHTML=`
+                <div class="slider-header filter-header">
+                    <h2 class="section-title">Quick Note</h2>
+                    <button class="close-slider-btn" id="closeNoteBtn">×</button>
+                </div>
+                <div class="slider-content">
+                    <table class="data-table">
+                        <thead><tr><th>Date</th><th>User</th><th>Note</th></tr></thead>
+                        <tbody>${notesHtml}
+                            <tr class="table-row">
+                                <td class="table-cell"></td>
+                                <td class="table-cell">${AppUtils.escapeHtml(user)}</td>
+                                <td class="table-cell"><textarea id="noteEditor" class="quicknote-content"></textarea></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="filter-bar" style="margin-top:10px;">
+                        <button class="table-action-btn" id="saveNoteBtn">Save</button>
+                    </div>
+                </div>`;
+            popup.style.display='block';
+            document.getElementById('saveNoteBtn').onclick=function(){
+                const text=document.getElementById('noteEditor').value.trim();
+                if(text){
+                    if(!SessionManager.notes) SessionManager.notes={};
+                    if(!Array.isArray(SessionManager.notes[key])) SessionManager.notes[key]=[];
+                    const entry={text,timestamp:Date.now()};
+                    SessionManager.notes[key].push(entry);
+                    ['riskerSessionData','sessionData','appData'].forEach(k=>{
+                        let sd=JSON.parse(localStorage.getItem(k)||'{}');
+                        if(!sd.notes) sd.notes={};
+                        if(!Array.isArray(sd.notes[key])) sd.notes[key]=[];
+                        sd.notes[key].push(entry);
+                        localStorage.setItem(k,JSON.stringify(sd));
+                    });
+                }
+                popup.style.display='none';
+                updateRiskmapDisplay();
+            };
+            document.getElementById('closeNoteBtn').onclick=function(){popup.style.display='none';};
         }
 
         function addToWorkflowRiskmap(index){
