@@ -731,6 +731,20 @@ function handleFile(event) {
     try {
         console.log('=== APP: File Upload Started ===');
 
+        if (!event.target.result && event.target.files) {
+            const file = event.target.files[0];
+            if (!file) return;
+            console.warn('handleFile called with file input event, using FileReader');
+            const reader = new FileReader();
+            reader.onload = handleFile;
+            reader.onerror = err => {
+                console.error('File read error:', err);
+                alert('Failed to read file: ' + err.message);
+            };
+            reader.readAsArrayBuffer(file);
+            return;
+        }
+
         const data = new Uint8Array(event.target.result);
         const workbook = XLSX.read(data, { type: 'array' });
 
