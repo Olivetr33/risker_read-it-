@@ -1547,13 +1547,24 @@ function renderWorkflowSidebar(){
             hasNote = true;
         }
         const noteClass = hasNote ? ' quicknote-has-content' : '';
-        html += `<tr><td>${e.name}</td><td>${e.lcsms}</td><td>${e.totalRisk}</td><td>${new Date(e.addedAt).toLocaleDateString()}</td><td><button class="table-action-btn" onclick="completeWorkflow(\'${k}\')">Done</button><button class="table-action-btn note-btn quicknote-btn${noteClass}" data-customer="${k}" title="${preview}">🗒</button></td></tr>`;
+        html += `<tr data-workflow-id="${k}"><td>${e.name}</td><td>${e.lcsms}</td><td>${e.totalRisk}</td><td>${new Date(e.addedAt).toLocaleDateString()}</td><td><button class="table-action-btn done-btn" onclick="markWorkflowItemDone(\'${k}\')">Done</button><button class="table-action-btn note-btn quicknote-btn${noteClass}" data-customer="${k}" title="${preview}">🗒</button></td></tr>`;
     });
     table.innerHTML = html;
     bindQuickNoteButtons();
 }
 
-window.completeWorkflow = function(key){
+function markWorkflowItemDone(entryId){
+    const row = document.querySelector(`[data-workflow-id="${entryId}"]`);
+    if(!row) return;
+    const btn = row.querySelector('.done-btn');
+    if(btn) btn.setAttribute('disabled','true');
+    requestAnimationFrame(() => {
+        window.completeWorkflow(entryId, true);
+        row.remove();
+    });
+}
+
+window.completeWorkflow = function(key, skipSidebar){
     const entry = SessionManager.workflowEntries[key];
     if(!entry) return;
     const row = entry.rowData || {};
@@ -1567,7 +1578,7 @@ window.completeWorkflow = function(key){
     }
     saveSession();
     delete SessionManager.workflowEntries[key];
-    renderWorkflowSidebar();
+    if(!skipSidebar) renderWorkflowSidebar();
     renderTable(DataUtils.getActiveCustomers(filteredData));
     if(sliderOpen) updateSliderData();
     showToast('Customer archived successfully.');
