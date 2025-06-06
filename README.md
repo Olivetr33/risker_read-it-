@@ -8,12 +8,14 @@
 - Sort, filter and archive customer records
 - Risk heatmap view and simple dashboard
 - Data is stored only in browser storage – no server or tracking
+- Works fully offline – no network connection required
 
 ## Setup
 
 1. Clone or download this repository.
 2. (Optional) Replace `background.mp4` with your own video for the animated background.
 3. Open `index.html` in a modern browser (Chrome, Firefox, Edge or Safari).
+4. All scripts are bundled in the `vendor/` directory so the app works without an Internet connection.
 
 ## Usage
 
@@ -24,7 +26,8 @@
 
 ## External dependencies
 
-- [XLSX](https://github.com/SheetJS/sheetjs) `0.18.5` – loaded via CDN to parse Excel files
+ - [XLSX](https://github.com/SheetJS/sheetjs) `0.18.5` – included in `vendor/` to parse Excel files
+ - [Chart.js](https://www.chartjs.org/) – included in `vendor/` for dashboard charts
 
 ## Project structure
 
