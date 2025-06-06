@@ -1550,6 +1550,7 @@ function renderWorkflowSidebar(){
         html += `<tr><td>${e.name}</td><td>${e.lcsms}</td><td>${e.totalRisk}</td><td>${new Date(e.addedAt).toLocaleDateString()}</td><td><button class="table-action-btn" onclick="completeWorkflow(\'${k}\')">Done</button><button class="table-action-btn note-btn quicknote-btn${noteClass}" data-customer="${k}" title="${preview}">🗒</button></td></tr>`;
     });
     table.innerHTML = html;
+    bindQuickNoteButtons();
 }
 
 window.completeWorkflow = function(key){

@@ -1205,13 +1205,13 @@
                     btn.classList.add('archiving');
                 }
                 requestAnimationFrame(() => {
-                    markAsDoneRiskmap(idx);
-                    if (btn) {
-                        const row = btn.closest('tr');
-                        if (row) row.remove();
-                    }
+                    const row = btn ? btn.closest('tr') : null;
+                    if (row) row.remove();
                     updateStats();
-                    showNotification('Customer archived successfully.');
+                    requestIdleCallback(() => {
+                        markAsDoneRiskmap(idx);
+                        showNotification('Customer archived successfully.');
+                    });
                 });
             };
             return debounce(handler, 200);
