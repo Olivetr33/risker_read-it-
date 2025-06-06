@@ -1361,10 +1361,10 @@ function openNoteModal(key){
     if(!popup){
         popup = document.createElement('div');
         popup.id = 'quicknotePopup';
-        popup.className = 'quicknote-popup quicknote-panel quicknote-slider-fixed';
+        popup.className = 'quicknote-popup slider-panel quicknote-panel quicknote-slider-fixed';
         document.body.appendChild(popup);
     } else {
-        popup.className = 'quicknote-popup quicknote-panel quicknote-slider-fixed';
+        popup.className = 'quicknote-popup slider-panel quicknote-panel quicknote-slider-fixed';
     }
     const notesRaw = SessionManager.notes && SessionManager.notes[key];
     const notes = Array.isArray(notesRaw) ? notesRaw : (notesRaw ? [notesRaw] : []);
