@@ -1262,22 +1262,6 @@
         const QuickNote = { render: openNoteModal };
         window.QuickNote = QuickNote;
 
-        function handleQuickNoteOpen(e){
-            const id = e.currentTarget.dataset.customer;
-            if(!id) return;
-            console.log('🟡 QuickNote triggered for:', id);
-            QuickNote.render(Number(id));
-            const slider = document.getElementById('quickNoteSlider');
-            if(slider) slider.classList.add('visible');
-        }
-
-        function bindQuickNoteButtons(){
-            document.querySelectorAll('.quicknote-btn').forEach(btn=>{
-                btn.removeEventListener('click', handleQuickNoteOpen);
-                btn.addEventListener('click', handleQuickNoteOpen);
-            });
-        }
-
         function addToWorkflowRiskmap(index){
             if(index < 0 || index >= riskmapData.length) return;
             const c = riskmapData[index];
