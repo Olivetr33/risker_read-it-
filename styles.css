@@ -805,8 +805,9 @@ body {
 .dropdown-menu {
   display: none;
   position: absolute;
-  top: 36px;
+  bottom: 36px;
   right: 0;
+  top: auto;
   background: #23272b;
   border-radius: 8px;
   padding: 10px;
@@ -815,5 +816,34 @@ body {
 
 .debug-dropdown:hover .dropdown-menu {
   display: block;
+}
+.debug-log {
+  font-size: 12px;
+  max-height: 120px;
+  overflow-y: auto;
+  padding: 6px;
+  color: #fff;
+}
+.sidebar-btn-layout {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  margin-left: -8px;
+  border-radius: 0 18px 18px 0;
+  position: relative;
+}
+.sidebar-btn-layout.active {
+  border: 2px solid #ffd221;
+}
+.sidebar-btn-layout:not(.active)::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 4px;
+  height: 100%;
+  background: rgba(255,210,33,0.3);
+  border-radius: 0 12px 12px 0;
 }
 .workflow-table td,.workflow-table th{text-align:center;vertical-align:middle;}

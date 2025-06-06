@@ -29,18 +29,18 @@
         <div class="sidebar">
             <nav class="sidebar-nav">
                 <ul>
-                    <li><button class="sidebar-btn active-page" id="startBtn">ShowData</button></li>
-                    <li><button class="sidebar-btn" id="uploadDataBtn">Upload Data</button></li>
-                    <li><button class="sidebar-btn" id="heatmapBtn">📊 RiskMap</button></li>
-                    <li><button class="sidebar-btn" id="archiveBtn">📋 Archive</button></li>
-                    <li><button class="sidebar-btn" id="kpiDashboardBtn">📈 KPI Dashboard</button></li>
-                    <li><button class="sidebar-btn" id="workflowBtn">🗂 Workflow</button></li>
+                    <li><button class="sidebar-btn sidebar-btn-layout active" id="startBtn">ShowData</button></li>
+                    <li><button class="sidebar-btn sidebar-btn-layout" id="uploadDataBtn">Upload Data</button></li>
+                    <li><button class="sidebar-btn sidebar-btn-layout" id="heatmapBtn">📊 RiskMap</button></li>
+                    <li><button class="sidebar-btn sidebar-btn-layout" id="archiveBtn">📋 Archive</button></li>
+                    <li><button class="sidebar-btn sidebar-btn-layout" id="kpiDashboardBtn">📈 KPI Dashboard</button></li>
+                    <li><button class="sidebar-btn sidebar-btn-layout" id="workflowBtn">🗂 Workflow</button></li>
                 </ul>
             </nav>
             
             <div class="sidebar-footer">
-                <button class="sidebar-btn" id="saveSessionBtn">💾 Save Session</button>
-                <button class="sidebar-btn logout-btn" id="logoutBtn">
+                <button class="sidebar-btn sidebar-btn-layout" id="saveSessionBtn">💾 Save Session</button>
+                <button class="sidebar-btn sidebar-btn-layout logout-btn" id="logoutBtn">
                     Logout & Clear Session
                 </button>
             </div>
@@ -120,6 +120,7 @@
                 </div>
             </div>
         </div>
+        <div id="debugLog" class="debug-log"></div>
     </div>
 
     <div id="faqPopupBg" class="popup-bg" style="display:none;">
@@ -257,14 +258,14 @@
         }
 
         /* KORRIGIERT: Aktive Seite - ShowData ist jetzt aktiv */
-        .active-page {
+        .sidebar-btn-layout.active {
             background: rgba(255, 210, 33, 0.2) !important;
             border: 2px solid #ffd221 !important;
             color: #ffd221 !important;
             cursor: default !important;
         }
 
-        .active-page:hover {
+        .sidebar-btn-layout.active:hover {
             transform: translateX(-10px) !important;
         }
 

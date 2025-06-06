@@ -1117,6 +1117,7 @@ function renderKpiDashboard() {
     btnWrap.className = 'filter-bar';
     const metricSelect = document.createElement('select');
     metricSelect.id = 'metricSelect';
+    metricSelect.className = 'sort-select';
     ['ARR','Total Risk','Objective Risk','Contact Risk','Contract Risk'].forEach(m => {
         const opt = document.createElement('option');
         opt.value = m;
@@ -1132,7 +1133,7 @@ function renderKpiDashboard() {
     sortDesc.textContent = '↓';
     const exportBtn = document.createElement('button');
     exportBtn.textContent = '📤 Get Graphic';
-    exportBtn.className = 'dashboard-export-btn';
+    exportBtn.className = 'dashboard-export-btn sort-btn';
     const toggleHistory = document.createElement('label');
     toggleHistory.innerHTML = '<input type="checkbox" id="toggleRiskHistory"> Show Risk History';
 
@@ -1251,6 +1252,8 @@ function showFaqModal() {
         <p>Attach notes to a customer. Notes are saved per session and can be edited anytime.</p>
         <h4>💾 Save Session</h4>
         <p>Manually stores the session state in the browser's local storage.</p>
+        <h4>❌ Remove from Workflow/Archive</h4>
+        <p>Returns an archived or workflow customer to the active table view.</p>
         <h4>📊 KPI Dashboard</h4>
         <p>Displays risk and revenue data as horizontal bar charts, sortable and exportable.</p>
         <h4>🔍 Radar</h4>
@@ -1596,10 +1599,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 if(downloadBtn){
                     downloadBtn.onclick = AppUtils.DebugLogger.download.bind(AppUtils.DebugLogger);
                 }
+                Logger.display();
                 debugDropdown.addEventListener('change', function(e){
                     if(e.target.matches('input[type="checkbox"]')){
                         Logger.setFilter(e.target.value, e.target.checked);
                         AppUtils.DebugLogger.setFilter(e.target.value, e.target.checked);
+                        Logger.display();
                     }
                 });
             }
