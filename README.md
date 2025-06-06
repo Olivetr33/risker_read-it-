@@ -18,7 +18,7 @@
 
 1. Clone or download this repository.
 2. (Optional) Replace `background.mp4` with your own video for the animated background.
-3. Open `index.html` in a modern browser (Chrome, Firefox, Edge or Safari).
+3. Open `index.html` in a modern browser (Chrome, Firefox, Edge or Safari). If Safari or another browser blocks scripts from `file://`, run `python3 -m http.server` in this directory and open `http://localhost:8080`.
 4. All scripts are bundled in the `vendor/` directory so the app works without an Internet connection.
 
 ## Usage
