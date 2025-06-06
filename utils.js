@@ -549,6 +549,15 @@ window.AppUtils = {
             });
             
             window.AppUtils.DebugLogger.add('info', 'Session cleared from all keys');
+        },
+
+        getAllCustomers: function() {
+            const data = this.restore() || {};
+            return [].concat(
+                data.excelData || [],
+                data.filteredData || [],
+                data.aggregatedData || []
+            );
         }
     },
 

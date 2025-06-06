@@ -1028,6 +1028,7 @@
                 
                 console.log('RiskMap Data:', riskmapData);
                 updateRiskmapDisplay();
+                console.log('📊 RiskMap data check:', AppUtils.SessionManager.getAllCustomers());
 
                 if (riskmapData.length > 0) {
                     console.log('=== RiskMap Data Loading SUCCESS ===');
@@ -1174,7 +1175,7 @@
                                 if(Array.isArray(n) && n.length){ preview = n[n.length-1].text.substring(0,50); hasNote = true; }
                                 else if(n && n.text){ preview = n.text.substring(0,50); hasNote = true; }
                                 const cls = hasNote ? ' quicknote-has-content' : '';
-                                return `<button class="table-action-btn note-btn${cls}" onclick="openNoteModal(${index})" title="${preview}">🗒</button>`;
+                                return `<button class="table-action-btn note-btn quicknote-btn${cls}" data-customer="${index}" title="${preview}">🗒</button>`;
                             })()}
                         </td>
                     </tr>
@@ -1183,6 +1184,7 @@
             
             tableBody.innerHTML = tableHTML;
             console.log('RiskMap: Table rendered successfully with', sortedData.length, 'rows');
+            bindQuickNoteButtons();
         }
 
         // Archive entry with improved session sync
@@ -1255,10 +1257,10 @@
             const customer = riskmapData[index];
             if(!customer) return;
             const key = AppUtils.DataUtils.generateCustomerKey(customer);
-            let popup = document.getElementById('quicknotePopup');
+            let popup = document.getElementById('quickNoteSlider');
             if(!popup){
                 popup = document.createElement('div');
-                popup.id = 'quicknotePopup';
+                popup.id = 'quickNoteSlider';
                 popup.className = 'quicknote-popup slider-panel quicknote-panel quicknote-slider-fixed quicknote-overlay';
                 document.body.appendChild(popup);
             } else {
@@ -1308,6 +1310,25 @@
                 updateRiskmapDisplay();
             };
             document.getElementById('closeNoteBtn').onclick=function(){popup.style.display='none';};
+        }
+
+        const QuickNote = { render: openNoteModal };
+        window.QuickNote = QuickNote;
+
+        function handleQuickNoteClick(e){
+            const id = e.currentTarget.dataset.customer;
+            console.log('🟡 QuickNote button clicked for:', id);
+            if(!id) return;
+            QuickNote.render(Number(id));
+            const slider = document.getElementById('quickNoteSlider');
+            if(slider) slider.classList.add('visible');
+        }
+
+        function bindQuickNoteButtons(){
+            document.querySelectorAll('.quicknote-btn').forEach(btn=>{
+                btn.removeEventListener('click', handleQuickNoteClick);
+                btn.addEventListener('click', handleQuickNoteClick);
+            });
         }
 
         function addToWorkflowRiskmap(index){
