@@ -719,11 +719,14 @@ function handleFile(e) {
     const file = e.target.files[0];
     if (!file) return;
 
+    console.debug('📁 File selected:', file.name, file.size);
+
     const reader = new FileReader();
     reader.onload = function(event) {
+        console.debug('✅ FileReader loaded, size:', event.target.result.byteLength);
         try {
             console.log('=== APP: File Upload Started ===');
-            
+
             const data = new Uint8Array(event.target.result);
             
             // KORRIGIERT: Einfache XLSX-Optionen - HIER WAR DER FEHLER!
@@ -813,9 +816,13 @@ function handleFile(e) {
             alert(`File uploaded successfully: ${extractedData.length} customers processed with corrected XLSX options`);
             
         } catch (error) {
-            console.error('APP: Processing error:', error);
+            console.error('❌ XLSX parsing failed:', error);
             alert(`File processing failed: ${error.message}`);
         }
+    };
+
+    reader.onerror = function(err) {
+        console.error('❌ FileReader error:', err);
     };
 
     reader.readAsArrayBuffer(file);
