@@ -367,7 +367,7 @@ window.triggerUpload = function() {
     
     const newFileInput = FileInputUtils.reset('fileInput');
     if (newFileInput) {
-        newFileInput.addEventListener('change', handleFile, false);
+        newFileInput.addEventListener('change', onFileInputChange, false);
         newFileInput.value = "";
         newFileInput.click();
     }
@@ -715,73 +715,82 @@ window.sortSlider = function(column) {
 };
 
 // KORRIGIERT: File Upload mit RICHTIGEN XLSX-Optionen - DAS IST DER ECHTE FIX!
-function handleFile(e) {
+function onFileInputChange(e) {
     const file = e.target.files[0];
     if (!file) return;
-
-    console.debug('📁 File selected:', file.name, file.size);
-
-    AppUtils.handleFileUpload(file, function(rawData, parsedHeaders) {
-        console.log('=== APP: File Upload Started ===');
-
-        headers = parsedHeaders;
-        console.log('APP: Original headers found:', headers);
-
-        console.log(`APP: Raw data extracted: ${rawData.length} rows`);
-
-        const extractedData = extractCustomerData(rawData, headers);
-        console.log(`APP: Extracted data: ${extractedData.length} customers`);
-
-        if (extractedData.length > 0) {
-            console.log('APP: Sample extracted customer:', extractedData[0]);
-            console.log('APP: ARR values in first 5 customers:', extractedData.slice(0, 5).map(c => ({
-                name: c['Customer Name'],
-                arr: c.ARR,
-                risk: c['Total Risk']
-            })));
-        }
-
-        excelData = extractedData;
-        aggregatedData = extractedData;
-        originalAggregatedData = [...extractedData];
-
-        filteredData = DataUtils.mergeSessionWithData(erledigtRows, extractedData);
-        selectedLCSM = 'ALL';
-
-        SessionManager.riskHistory = AppUtils.buildRiskHistory(extractedData);
-        if(!SessionManager.workflowEntries) SessionManager.workflowEntries = {};
-
-        console.log('APP: Final data prepared:', {
-            excelData: excelData.length,
-            aggregatedData: aggregatedData.length,
-            filteredData: filteredData.length
-        });
-
-        renderTable(DataUtils.getActiveCustomers(filteredData));
-        renderSortControls();
-        updateTableVisibility();
-
-        const archiveBar = document.getElementById('archiveUploadBar');
-        if (archiveBar) {
-            archiveBar.style.display = 'none';
-        }
-        archiveMode = false;
-
-        if (sliderOpen) {
-            updateSliderData();
-        }
-
-        saveSession();
-
-        console.log('=== APP: File Upload SUCCESS ===');
-        alert(`File uploaded successfully: ${extractedData.length} customers processed with corrected XLSX options`);
-
-    }, function(error){
-        console.error('❌ XLSX parsing failed:', error);
-        alert(`File processing failed: ${error.message}`);
-    });
+    const reader = new FileReader();
+    reader.onload = handleFile;
+    reader.onerror = err => {
+        console.error('File read error:', err);
+        alert('Failed to read file: ' + err.message);
+    };
+    reader.readAsArrayBuffer(file);
 }
 
+function handleFile(e) {
+    console.log('File upload initiated');
+    const data = e.target.result;
+    const workbook = XLSX.read(data, {
+        type: 'array',
+        cellDates: true,
+        dateNF: 'yyyy-mm-dd',
+        cellText: false,
+        cellNF: false
+    });
+    console.log('Workbook loaded:', workbook.SheetNames);
+
+    const validateHeaders = (headers) => {
+        const validHeaders = headers.filter(header => header && header.toString().trim() !== '');
+        console.log('Validated headers:', validHeaders);
+        if (validHeaders.length === 0) throw new Error('No valid headers found');
+        return validHeaders;
+    };
+
+    const validateData = (data) => {
+        console.log('Validating data rows:', data.length);
+        return data.filter(row => Object.values(row).some(cell => cell !== null && cell !== undefined));
+    };
+
+    const COLUMN_MAPPINGS = {
+        'LCSM': ['LCSM', 'lcsm', 'CSM', 'Manager', 'Account Manager'],
+        'Customer Name': ['Customer Name', 'Kunde', 'Name', 'Account', 'Customer'],
+        'Total Risk': ['Total Risk', 'Risk Score', 'Risiko', 'Risk', 'Total'],
+        'ARR': ['ARR', 'Revenue', 'Umsatz', 'Annual Revenue']
+    };
+
+    const findColumnMatch = (headers) => {
+        const mapping = {};
+        for (const [key, aliases] of Object.entries(COLUMN_MAPPINGS)) {
+            const matchedHeader = headers.find(h =>
+                aliases.some(alias => h.toString().toLowerCase() === alias.toLowerCase())
+            );
+            mapping[key] = matchedHeader;
+            console.log(`Mapping ${key} to ${matchedHeader}`);
+        }
+        return mapping;
+    };
+
+    function renderTable(data) {
+        console.log('Rendering table:', {
+            rowCount: data.length,
+            columnCount: data[0] ? Object.keys(data[0]).length : 0,
+            sampleRow: data[0]
+        });
+        // ...existing rendering code...
+    }
+
+    try {
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const json = XLSX.utils.sheet_to_json(sheet, {header: 1});
+        const headers = validateHeaders(json[0]);
+        const mapping = findColumnMatch(headers);
+        const data = validateData(json.slice(1));
+        renderTable(data);
+    } catch (error) {
+        console.error('Import failed:', error);
+        alert('Failed to import file: ' + error.message);
+    }
+}
 function renderSortControls() {
     const stickySort = document.getElementById('stickySort');
     if (!stickySort) return;
@@ -1411,7 +1420,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Ensure the file input properly triggers the upload handler
     const fileInput = document.getElementById('fileInput');
     if (fileInput) {
-        fileInput.addEventListener('change', handleFile, false);
+        fileInput.addEventListener('change', onFileInputChange, false);
         console.log('✅ DEBUG: File input listener correctly bound');
     } else {
         console.warn('❌ fileInput not found in DOM');
@@ -1489,7 +1498,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             const fileInput = document.getElementById('fileInput');
             if (fileInput) {
-                fileInput.addEventListener('change', handleFile, false);
+                fileInput.addEventListener('change', onFileInputChange, false);
                 console.log('File input listener added');
             }
 
