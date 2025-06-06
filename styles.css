@@ -758,5 +758,6 @@ body {
 }
 
 .table-action-btn.remove-btn { background: #f44336; }
+.note-btn { background: #555; }
 
 ::-webkit-scrollbar { width: 0; background: transparent; }

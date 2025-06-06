@@ -189,6 +189,7 @@ function saveSession() {
         lastSaveTime: AutoSave.lastSaveTime,
         riskHistory: SessionManager.riskHistory,
         workflowEntries: SessionManager.workflowEntries,
+        notes: SessionManager.notes,
         timestamp: Date.now()
     };
     
@@ -238,6 +239,7 @@ function restoreSession() {
         archiveMode = sessionData.archiveMode || false;
         SessionManager.riskHistory = sessionData.riskHistory || {};
         SessionManager.workflowEntries = sessionData.workflowEntries || {};
+        SessionManager.notes = sessionData.notes || {};
         
         AutoSave.lastSaveTime = sessionData.lastSaveTime;
         
@@ -910,14 +912,18 @@ function renderTable(data) {
         
         displayColumns.forEach(col => {
             if (col === 'Actions') {
+                const note = SessionManager.notes && SessionManager.notes[customerKey];
+                const preview = note ? note.text.substring(0,50) : '';
                 if (archiveMode) {
                     tableHTML += `<td>
                         <button class="table-action-btn remove-btn" onclick="removeFromArchive(${index})">Remove</button>
+                        <button class="table-action-btn note-btn" onclick="openNoteModal('${customerKey}')" title="${preview}">🗒</button>
                     </td>`;
                 } else {
                     tableHTML += `<td>
                         <button class="table-action-btn" onclick="markAsDone(${index})" title="Archive this entry">Archive</button>
                         <button class="table-action-btn" onclick="addCustomerToWorkflow(${index})" title="Add to Workflow">Add</button>
+                        <button class="table-action-btn note-btn" onclick="openNoteModal('${customerKey}')" title="${preview}">🗒</button>
                     </td>`;
                 }
             } else if (col === 'ARR') {
@@ -1095,6 +1101,7 @@ function renderKpiDashboard() {
 
     const controls = document.createElement('div');
     controls.className = 'slider-filters-static';
+    controls.style.background = 'transparent';
     controls.innerHTML = '<h3>Sort Data</h3>';
     const btnWrap = document.createElement('div');
     btnWrap.className = 'filter-buttons';
@@ -1125,17 +1132,22 @@ function renderKpiDashboard() {
     controls.appendChild(toggleHistory);
     card.appendChild(controls);
 
+    const chartArea = document.createElement('div');
+    chartArea.className = 'chart-area';
+
     const chartWrap = document.createElement('div');
     chartWrap.className = 'chart-container';
     chartWrap.innerHTML = '<canvas id="kpiChart"></canvas>';
-    card.appendChild(chartWrap);
+    chartArea.appendChild(chartWrap);
 
     const historyWrap = document.createElement('div');
     historyWrap.id = 'riskHistoryChartContainer';
     historyWrap.className = 'chart-container';
     historyWrap.style.display = 'none';
     historyWrap.innerHTML = '<select id="riskTypeSelect"><option value="Total">Total Risk</option><option value="Objective">Objective Risk</option><option value="Contact">Contact Risk</option><option value="Contract">Contract Risk</option></select> <select id="riskLevelSelect"><option value="all">All</option><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select><canvas id="riskHistoryChart"></canvas>';
-    card.appendChild(historyWrap);
+    chartArea.appendChild(historyWrap);
+
+    card.appendChild(chartArea);
 
     container.appendChild(card);
 
@@ -1148,7 +1160,24 @@ function renderKpiDashboard() {
         chart = new Chart(document.getElementById('kpiChart').getContext('2d'), {
             type: 'bar',
             data: { labels, datasets:[{ label: metric, data, backgroundColor: '#ffd221' }] },
-            options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{labels:{color:'#f1f1f1'}}}, scales:{x:{ticks:{color:'#f1f1f1'}}, y:{ticks:{color:'#f1f1f1'}}}}
+            options: {
+                indexAxis: 'y',
+                responsive:true,
+                maintainAspectRatio:false,
+                plugins:{
+                    legend:{labels:{color:'#f1f1f1'}},
+                    tooltip:{
+                        backgroundColor:'#2c2f33',
+                        titleColor:'#fff',
+                        bodyColor:'#fff',
+                        borderColor:'#555',
+                        borderWidth:1,
+                        cornerRadius:6,
+                        displayColors:false
+                    }
+                },
+                scales:{x:{ticks:{color:'#f1f1f1'}}, y:{ticks:{color:'#f1f1f1'}}}
+            }
         });
         window.addEventListener('resize', ()=>chart.resize());
     }
@@ -1196,7 +1225,19 @@ function renderRiskHistoryChart() {
 }
 
 function showFaqModal() {
-    const faqHtml = `<div class='privacy-popup-content'><h3>FAQ</h3><p>This dashboard helps visualize risk metrics. Upload data, then open the KPI Dashboard to view charts. Use the risk history toggle to see trends over time.</p></div>`;
+    const faqHtml = `<div class='privacy-popup-content'>
+        <h3>FAQ</h3>
+        <p>This application contains several modules:</p>
+        <ul>
+            <li><b>📈 KPI Dashboard</b> - Displays customer metrics and allows sorting and exporting.</li>
+            <li><b>🧭 RiskMap</b> - Table of active customer risks with filters and Radar details.</li>
+            <li><b>📋 Archive</b> - Shows previously archived customers.</li>
+            <li><b>➕ Workflow</b> - Customers for manual follow-up managed via Add to Workflow.</li>
+            <li><b>🔍 Radar</b> - Detailed popup for a customer with risk breakdown.</li>
+            <li><b>💾 Save Session</b> - Stores current session state.</li>
+            <li><b>🗒 QuickNotes</b> - Attach editable notes to each customer entry.</li>
+        </ul>
+    </div>`;
     showPopup(faqHtml);
 }
 
@@ -1227,6 +1268,29 @@ function showToast(message){
         setTimeout(()=>toast.remove(),300);
     },2500);
 }
+
+function openNoteModal(key){
+    const bg = document.getElementById('dialogBg');
+    const inner = document.getElementById('dialogInner');
+    if(!bg || !inner) return;
+    const note = (SessionManager.notes && SessionManager.notes[key]) || {text:'',timestamp:null};
+    inner.innerHTML = `<h3>Quick Note</h3>
+        <div id="noteEditor" contenteditable="true" style="min-height:100px;border:1px solid #555;padding:10px;border-radius:6px;">${note.text || ''}</div>
+        <div style="margin-top:6px;font-size:12px;color:#ccc;">${note.timestamp ? new Date(note.timestamp).toLocaleString() : ''}</div>
+        <button class="table-action-btn" id="saveNoteBtn">Save</button>
+        <button class="table-action-btn" id="closeNoteBtn">Close</button>`;
+    bg.style.display = 'flex';
+    document.getElementById('saveNoteBtn').onclick = function(){
+        const text = document.getElementById('noteEditor').innerHTML;
+        if(!SessionManager.notes) SessionManager.notes = {};
+        SessionManager.notes[key] = {text, timestamp: Date.now()};
+        saveSession();
+        bg.style.display = 'none';
+        renderTable(archiveMode ? erledigtRows : DataUtils.getActiveCustomers(filteredData));
+    };
+    document.getElementById('closeNoteBtn').onclick = function(){ bg.style.display='none'; };
+}
+window.openNoteModal = openNoteModal;
 
 window.saveCurrentSession = function(){
     saveSession();
@@ -1280,6 +1344,14 @@ function toggleWorkflow(){
         bar.classList.add('active');
         toggleFooter(true);
     }else{
+        bar.classList.remove('active');
+        toggleFooter(false);
+    }
+}
+
+function closeWorkflowSidebar(){
+    const bar = document.getElementById('workflowSidebar');
+    if(bar && bar.classList.contains('active')){
         bar.classList.remove('active');
         toggleFooter(false);
     }
@@ -1393,13 +1465,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const uploadDataBtn = document.getElementById('uploadDataBtn');
             if (uploadDataBtn) {
-                uploadDataBtn.onclick = window.triggerUpload;
+                uploadDataBtn.onclick = () => { closeWorkflowSidebar(); window.triggerUpload(); };
                 console.log('Upload Data button listener added');
             }
 
             const startBtn = document.getElementById('startBtn');
             if (startBtn) {
-                startBtn.onclick = window.goToStart;
+                startBtn.onclick = () => { closeWorkflowSidebar(); window.goToStart(); };
                 console.log('ShowData button listener added');
             }
             
@@ -1408,17 +1480,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.error('Logout button not found!');
             }
 
-            const heatmapSuccess = forceButtonClick('heatmapBtn', window.openHeatmap);
+            const heatmapSuccess = forceButtonClick('heatmapBtn', () => { closeWorkflowSidebar(); window.openHeatmap(); });
             if (!heatmapSuccess) {
                 console.error('RiskMap button not found!');
             }
             
-            const archiveSuccess = forceButtonClick('archiveBtn', window.showArchive);
+            const archiveSuccess = forceButtonClick('archiveBtn', () => { closeWorkflowSidebar(); window.showArchive(); });
             if (!archiveSuccess) {
                 console.error('Archive button not found!');
             }
 
-            const kpiSuccess = forceButtonClick('kpiDashboardBtn', showKpiDashboard);
+            const kpiSuccess = forceButtonClick('kpiDashboardBtn', () => { closeWorkflowSidebar(); showKpiDashboard(); });
             if (!kpiSuccess) {
                 console.error('KPI Dashboard button not found!');
             }
@@ -1431,6 +1503,11 @@ document.addEventListener('DOMContentLoaded', function() {
             const workflowBtn = document.getElementById('workflowBtn');
             if (workflowBtn) {
                 workflowBtn.onclick = toggleWorkflow;
+            }
+
+            const closeWorkflowBtn = document.getElementById('closeWorkflowBtn');
+            if (closeWorkflowBtn) {
+                closeWorkflowBtn.onclick = closeWorkflowSidebar;
             }
 
             const closeKpiBtn = document.getElementById('closeKpiBtn');
