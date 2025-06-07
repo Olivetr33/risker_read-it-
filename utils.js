@@ -604,7 +604,7 @@ window.AppUtils = {
                 const data = new Uint8Array(event.target.result);
                 const workbook = XLSX.read(data, { type: 'array' });
                 let chosenWorksheet = null;
-                let json = null;
+                let parsed = null;
                 for (const sheetName of workbook.SheetNames) {
                     const tempSheet = workbook.Sheets[sheetName];
                     const tempJson = XLSX.utils.sheet_to_json(tempSheet, {
@@ -614,20 +614,14 @@ window.AppUtils = {
                     });
 
                     const [rawHeaders, ...rows] = tempJson;
-                    const headersRow = (rawHeaders || []).map(h =>
-                        h ? String(h).trim() : ''
-                    );
+                    const headersRow = (rawHeaders || []).map(h => h ? String(h).trim() : '');
                     const validRows = rows.filter(row =>
-                        row.some(cell =>
-                            cell !== undefined &&
-                            cell !== null &&
-                            String(cell).trim() !== ''
-                        )
+                        row.some(cell => cell !== undefined && cell !== null && String(cell).trim() !== '')
                     );
 
                     if (headersRow.length && validRows.length > 0) {
                         chosenWorksheet = tempSheet;
-                        json = [headersRow, ...validRows];
+                        parsed = { headersRow, rows: validRows };
                         break;
                     }
                 }
@@ -638,14 +632,13 @@ window.AppUtils = {
                     return;
                 }
 
-                const headers = json[0];
-                const rawData = json.slice(1).map(row => {
-                    const obj = {};
-                    headers.forEach((header, i) => {
-                        obj[header] = row[i] ?? '';
-                    });
-                    return obj;
-                }).filter(row => {
+                const headers = parsed.headersRow;
+                const rawData = parsed.rows.map(row =>
+                    headers.reduce((acc, key, i) => {
+                        acc[key] = row[i] ?? '';
+                        return acc;
+                    }, {})
+                ).filter(row => {
                     return Object.values(row).some(value =>
                         value !== undefined &&
                         value !== null &&
@@ -798,10 +791,42 @@ function setupSidebarNavigation() {
     });
 }
 
+function renderView(view) {
+    if (typeof closeAllSliders === 'function') closeAllSliders();
+    switch (view) {
+        case 'riskMap':
+            if (typeof renderRiskMap === 'function') renderRiskMap();
+            highlightSidebarButton('heatmapBtn');
+            break;
+        case 'workflow':
+            if (typeof toggleWorkflow === 'function') toggleWorkflow();
+            highlightSidebarButton('workflowBtn');
+            break;
+        case 'topRadar':
+            if (typeof showRadarPopup === 'function') showRadarPopup();
+            highlightSidebarButton('radarSidebarBtn');
+            break;
+        case 'kpiDashboard':
+            if (typeof showKpiDashboard === 'function') showKpiDashboard();
+            highlightSidebarButton('kpiDashboardBtn');
+            break;
+    }
+}
+
 function setupSidebarButtons() {
-    document.querySelectorAll('.sidebar-btn').forEach(btn => {
-        btn.removeEventListener('click', handleSidebarNavigationClick);
-        btn.addEventListener('click', handleSidebarNavigationClick);
+    const mapping = {
+        heatmapBtn: () => renderView('riskMap'),
+        workflowBtn: () => renderView('workflow'),
+        radarSidebarBtn: () => renderView('topRadar'),
+        kpiDashboardBtn: () => renderView('kpiDashboard')
+    };
+
+    Object.keys(mapping).forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) {
+            btn.removeEventListener('click', mapping[id]);
+            btn.addEventListener('click', mapping[id]);
+        }
     });
 }
 
@@ -825,6 +850,7 @@ window.setupSidebarNavigation = setupSidebarNavigation;
 window.setupSidebarButtons = setupSidebarButtons;
 window.highlightSidebarButton = highlightSidebarButton;
 window.renderRiskMap = renderRiskMap;
+window.renderView = renderView;
 
 if (typeof document !== 'undefined') {
     document.addEventListener('DOMContentLoaded', () => {
