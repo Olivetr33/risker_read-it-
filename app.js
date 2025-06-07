@@ -854,8 +854,10 @@ function handleFile(event) {
 
             console.log('=== APP: File Upload SUCCESS ===');
             alert(`File uploaded successfully: ${extractedData.length} customers processed`);
+            if (SessionManager.parseImportedData) SessionManager.parseImportedData();
             renderRiskMap();
             highlightSidebarButton('heatmapBtn');
+            setupSidebarButtons();
         }
         uploadInProgress = false;
     } catch (error) {
@@ -1606,7 +1608,7 @@ function renderWorkflowSidebar(){
     });
     table.innerHTML = html;
     bindQuickNoteButtons();
-    setupSidebarNavigation();
+    setupSidebarButtons();
 }
 
 function markWorkflowItemDone(entryId){
@@ -1654,7 +1656,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.warn('❌ fileInput not found in DOM');
     }
 
-    setupSidebarNavigation();
+    setupSidebarButtons();
     
     let attempts = 0;
     const maxAttempts = 20;
@@ -1795,7 +1797,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 faqBtn.onclick = showFaqModal;
             }
 
-            setupSidebarNavigation();
+            setupSidebarButtons();
 
             const faqBg = document.getElementById('faqPopupBg');
             if (faqBg) {
