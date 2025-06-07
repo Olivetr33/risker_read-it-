@@ -782,20 +782,25 @@ function handleFile(event) {
             const tempSheet = workbook.Sheets[sheetName];
             const tempJson = XLSX.utils.sheet_to_json(tempSheet, {
                 header: 1,
-                raw: false,
                 defval: '',
                 blankrows: false
             });
-            const validRows = tempJson.slice(1).filter(row =>
+
+            const [rawHeaders, ...rows] = tempJson;
+            const headersRow = (rawHeaders || []).map(h =>
+                h ? String(h).trim() : ''
+            );
+            const validRows = rows.filter(row =>
                 row.some(cell =>
                     cell !== undefined &&
                     cell !== null &&
-                    cell.toString().trim() !== ''
+                    String(cell).trim() !== ''
                 )
             );
-            if (validRows.length > 0) {
+
+            if (headersRow.length && validRows.length > 0) {
                 chosenWorksheet = tempSheet;
-                json = [tempJson[0], ...validRows];
+                json = [headersRow, ...validRows];
                 break;
             }
         }
@@ -806,15 +811,13 @@ function handleFile(event) {
             return;
         }
 
-        headers = json[0].filter(header => header && header.toString().trim() !== '');
+        headers = json[0];
         console.log('APP: Original headers found:', headers);
 
         let rawData = json.slice(1).map((row, rowIndex) => {
             let obj = {};
             headers.forEach((header, i) => {
-                if (header && header.trim()) {
-                    obj[header] = row[i];
-                }
+                obj[header] = row[i] ?? '';
             });
             return obj;
         }).filter(row => {
@@ -822,7 +825,7 @@ function handleFile(event) {
                 value !== undefined &&
                 value !== null &&
                 value !== '' &&
-                value.toString().trim() !== ''
+                String(value).trim() !== ''
             );
         });
 
@@ -1147,6 +1150,14 @@ function checkUrlParameters() {
         console.log('URL parameter detected - opening workflow automatically');
         setTimeout(() => {
             toggleWorkflow();
+        }, 500);
+    }
+    if (urlParams.get('openRadar') === 'true') {
+        console.log('URL parameter detected - opening radar automatically');
+        setTimeout(() => {
+            if (typeof showRadarPopup === 'function') {
+                showRadarPopup();
+            }
         }, 500);
     }
 }
@@ -1530,6 +1541,21 @@ window.saveCurrentSession = function(){
     showToast('Session file downloaded.');
 };
 
+function restoreSessionFile(file){
+    AppUtils.handleSessionUpload(file, function(data){
+        excelData = data.filteredData || [];
+        filteredData = data.filteredData || [];
+        aggregatedData = data.filteredData || [];
+        originalAggregatedData = [...(data.filteredData || [])];
+        renderTable(DataUtils.getActiveCustomers(filteredData));
+        highlightSidebarButton('heatmapBtn');
+        setupSidebarButtons();
+        showToast('✅ Session imported.');
+    }, function(){
+        showToast('❌ Failed to import session.');
+    });
+}
+
 function addWorkflowEntry(row){
     const key = DataUtils.generateCustomerKey(row);
     if(!SessionManager.workflowEntries) SessionManager.workflowEntries = {};
@@ -1736,16 +1762,31 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             const uploadDataBtn = document.getElementById('uploadDataBtn');
-            if (uploadDataBtn) {
-                uploadDataBtn.onclick = () => { closeWorkflowSidebar(); window.triggerUpload(); };
-                console.log('Upload Data button listener added');
+            const uploadOptions = document.getElementById('uploadOptions');
+            if (uploadDataBtn && uploadOptions) {
+                uploadDataBtn.addEventListener('click', function(){
+                    uploadOptions.style.display = uploadOptions.style.display === 'flex' ? 'none' : 'flex';
+                });
+                uploadOptions.addEventListener('click', function(e){
+                    const action = e.target.dataset.action;
+                    if (action === 'uploadXlsx') {
+                        closeWorkflowSidebar();
+                        window.triggerUpload();
+                    } else if (action === 'restoreSession') {
+                        const input = document.createElement('input');
+                        input.type = 'file';
+                        input.accept = '.riskersession.json';
+                        input.addEventListener('change', function(ev){
+                            const file = ev.target.files[0];
+                            if (file) restoreSessionFile(file);
+                        }, { once: true });
+                        input.click();
+                    }
+                    uploadOptions.style.display = 'none';
+                });
+                console.log('Upload Data dropdown initialized');
             }
 
-            const startBtn = document.getElementById('startBtn');
-            if (startBtn) {
-                startBtn.onclick = () => { closeWorkflowSidebar(); window.goToStart(); };
-                console.log('ShowData button listener added');
-            }
             
             const logoutSuccess = forceButtonClick('logoutBtn', window.performLogout);
             if (!logoutSuccess) {
@@ -1775,6 +1816,13 @@ document.addEventListener('DOMContentLoaded', function() {
             const workflowBtn = document.getElementById('workflowBtn');
             if (workflowBtn) {
                 workflowBtn.onclick = toggleWorkflow;
+            }
+
+            const radarBtnSidebar = document.getElementById('radarSidebarBtn');
+            if (radarBtnSidebar) {
+                radarBtnSidebar.onclick = function() {
+                    window.location.href = 'riskmap.html?openRadar=true';
+                };
             }
 
             const closeWorkflowBtn = document.getElementById('closeWorkflowBtn');

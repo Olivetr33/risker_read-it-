@@ -50,12 +50,12 @@
         </div>
 
         <!-- Main Content -->
-        <div class="main-content slider-open with-footer" id="mainContent">
+        <div class="main-content with-footer" id="mainContent">
             <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" style="display: none;">
         </div>
 
         <!-- RiskMap Slider Panel -->
-        <div id="sliderPanel" class="slider-panel active">
+        <div id="sliderPanel" class="slider-panel">
             <div class="slider-header">
                 <h2 id="sliderTitle">RISKMAP</h2>
                 <button onclick="closeAllSliders()" class="close-slider-btn">×</button>
@@ -79,7 +79,7 @@
                 </div>
 
                 <!-- Statistics -->
-                <div class="slider-stats-static">
+                <div class="slider-stats-static sort-summary">
                     <div class="stat-item">
                         <span class="stat-label">Total Customers</span>
                         <span class="stat-value" id="totalCustomers">0</span>
@@ -474,6 +474,12 @@
             padding: 20px 35px;
             border-bottom: 2px solid rgba(255, 210, 33, 0.3);
             backdrop-filter: blur(10px);
+        }
+
+        .sort-summary {
+            font-size: 0.8rem;
+            padding: 4px 12px;
+            line-height: 1.2;
         }
 
         .stat-item {
@@ -1607,6 +1613,9 @@
             toggleFooter(false);
         }
 
+        window.showRadarPopup = showRadarPopup;
+        window.hideRadarPopup = hideRadarPopup;
+
         function radarKeyHandler(e) {
             if (e.key === 'Escape') hideRadarPopup();
         }
@@ -1756,6 +1765,10 @@
                 });
             }
 
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('openRadar') === 'true') {
+                showRadarPopup();
+            }
 
             setTimeout(updateSortButtons, 500);
             setTimeout(updateSortButtons, 1000);

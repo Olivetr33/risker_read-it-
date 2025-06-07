@@ -609,20 +609,25 @@ window.AppUtils = {
                     const tempSheet = workbook.Sheets[sheetName];
                     const tempJson = XLSX.utils.sheet_to_json(tempSheet, {
                         header: 1,
-                        raw: false,
                         defval: '',
                         blankrows: false
                     });
-                    const validRows = tempJson.slice(1).filter(row =>
+
+                    const [rawHeaders, ...rows] = tempJson;
+                    const headersRow = (rawHeaders || []).map(h =>
+                        h ? String(h).trim() : ''
+                    );
+                    const validRows = rows.filter(row =>
                         row.some(cell =>
                             cell !== undefined &&
                             cell !== null &&
-                            cell.toString().trim() !== ''
+                            String(cell).trim() !== ''
                         )
                     );
-                    if (validRows.length > 0) {
+
+                    if (headersRow.length && validRows.length > 0) {
                         chosenWorksheet = tempSheet;
-                        json = [tempJson[0], ...validRows];
+                        json = [headersRow, ...validRows];
                         break;
                     }
                 }
@@ -633,13 +638,11 @@ window.AppUtils = {
                     return;
                 }
 
-                const headers = json[0].filter(h => h && h.toString().trim() !== '');
+                const headers = json[0];
                 const rawData = json.slice(1).map(row => {
                     const obj = {};
                     headers.forEach((header, i) => {
-                        if (header && header.trim()) {
-                            obj[header] = row[i];
-                        }
+                        obj[header] = row[i] ?? '';
                     });
                     return obj;
                 }).filter(row => {
@@ -647,7 +650,7 @@ window.AppUtils = {
                         value !== undefined &&
                         value !== null &&
                         value !== '' &&
-                        value.toString().trim() !== ''
+                        String(value).trim() !== ''
                     );
                 });
 
