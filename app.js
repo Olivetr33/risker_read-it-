@@ -1137,6 +1137,18 @@ function checkUrlParameters() {
             window.showArchive();
         }, 500);
     }
+    if (urlParams.get('openKpi') === 'true') {
+        console.log('URL parameter detected - opening KPI dashboard automatically');
+        setTimeout(() => {
+            showKpiDashboard();
+        }, 500);
+    }
+    if (urlParams.get('openWorkflow') === 'true') {
+        console.log('URL parameter detected - opening workflow automatically');
+        setTimeout(() => {
+            toggleWorkflow();
+        }, 500);
+    }
 }
 
 function showKpiDashboard() {

@@ -933,10 +933,15 @@
         };
 
         window.showArchive = function() {
-            console.log('Displaying archive in RiskMap');
-            const session = SessionManager.restore() || {};
-            riskmapData = (session.archivedRows || []).slice();
-            updateRiskmapDisplay();
+            window.location.href = 'app.html?openArchive=true';
+        };
+
+        window.showKpiDashboard = function() {
+            window.location.href = 'app.html?openKpi=true';
+        };
+
+        window.toggleWorkflow = function() {
+            window.location.href = 'app.html?openWorkflow=true';
         };
 
         window.openHeatmap = function() {
