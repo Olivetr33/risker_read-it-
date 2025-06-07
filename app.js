@@ -327,18 +327,11 @@ window.openHeatmap = function() {
 
     const kpiContainer = document.getElementById('kpiDashboardContainer');
     if (kpiContainer) kpiContainer.classList.remove('active');
-    
-    const currentUrl = window.location.href;
-    
-    if (currentUrl.includes('riskmap.html')) {
-        console.log('Currently in RiskMap - closing and returning to ShowData');
-        window.location.href = 'app.html';
-        return;
-    }
-    
+
     if (aggregatedData && aggregatedData.length > 0) {
-        console.log('Opening RiskMap from app.html');
-        window.location.href = "riskmap.html";
+        closeAllSliders();
+        if (typeof clearMainContent === 'function') clearMainContent();
+        renderRiskMap();
         highlightSidebarButton('heatmapBtn');
     } else {
         alert('Please upload and process data first before viewing the RiskMap.');
