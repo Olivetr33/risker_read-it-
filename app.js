@@ -332,7 +332,7 @@ window.openHeatmap = function() {
         closeAllSliders();
         if (typeof clearMainContent === 'function') clearMainContent();
         renderRiskMap();
-        highlightSidebarButton('heatmapBtn');
+        highlightSidebarButton('sidebar-riskMap');
     } else {
         alert('Please upload and process data first before viewing the RiskMap.');
     }
@@ -852,7 +852,7 @@ function handleFile(event) {
             alert(`File uploaded successfully: ${extractedData.length} customers processed`);
             if (SessionManager.parseImportedData) SessionManager.parseImportedData();
             renderRiskMap();
-            highlightSidebarButton('heatmapBtn');
+            highlightSidebarButton('sidebar-riskMap');
             setupSidebarButtons();
         }
         uploadInProgress = false;
@@ -1542,7 +1542,7 @@ function restoreSessionFile(file){
         aggregatedData = data.filteredData || [];
         originalAggregatedData = [...(data.filteredData || [])];
         renderTable(DataUtils.getActiveCustomers(filteredData));
-        highlightSidebarButton('heatmapBtn');
+        highlightSidebarButton('sidebar-riskMap');
         setupSidebarButtons();
         showToast('✅ Session imported.');
     }, function(){
@@ -1787,17 +1787,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.error('Logout button not found!');
             }
 
-            const heatmapSuccess = forceButtonClick('heatmapBtn', () => { closeWorkflowSidebar(); window.openHeatmap(); });
+            const heatmapSuccess = forceButtonClick('sidebar-riskMap', () => { closeWorkflowSidebar(); window.openHeatmap(); });
             if (!heatmapSuccess) {
                 console.error('RiskMap button not found!');
             }
 
-            const riskMapBtn = document.getElementById('heatmapBtn');
+            const riskMapBtn = document.getElementById('sidebar-riskMap');
             if (riskMapBtn) {
                 riskMapBtn.addEventListener('click', () => {
                     closeAllSliders();
+                    clearMainContent();
                     renderRiskMap();
-                    highlightSidebarButton('heatmapBtn');
+                    highlightSidebarButton('sidebar-riskMap');
                 });
             }
             

@@ -797,7 +797,7 @@ function clearMainContent() {
         contentArea.innerHTML = '';
     }
 
-    document.querySelectorAll('.showdata-container, #main-table-wrapper, .legacy-wrapper')
+    document.querySelectorAll('#main-table-wrapper, .legacy-wrapper')
         .forEach(el => el.remove());
 }
 
@@ -807,7 +807,7 @@ function renderView(view) {
     switch (view) {
     case 'riskMap':
         if (typeof renderRiskMap === 'function') renderRiskMap();
-        highlightSidebarButton('heatmapBtn');
+        highlightSidebarButton('sidebar-riskMap');
         break;
     case 'workflow':
         if (typeof toggleWorkflow === 'function') toggleWorkflow();
@@ -826,7 +826,7 @@ function renderView(view) {
 
 function setupSidebarButtons() {
     const mapping = {
-        heatmapBtn: () => renderView('riskMap'),
+        'sidebar-riskMap': () => renderView('riskMap'),
         workflowBtn: () => renderView('workflow'),
         radarSidebarBtn: () => renderView('topRadar'),
         kpiDashboardBtn: () => renderView('kpiDashboard')
@@ -848,6 +848,8 @@ function highlightSidebarButton(buttonId) {
 }
 
 function renderRiskMap() {
+    if (typeof closeAllSliders === 'function') closeAllSliders();
+    if (typeof clearMainContent === 'function') clearMainContent();
     if (typeof loadRiskmapData === 'function') {
         loadRiskmapData();
     } else {
