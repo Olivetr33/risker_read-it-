@@ -796,6 +796,9 @@ function clearMainContent() {
     if (contentArea) {
         contentArea.innerHTML = '';
     }
+
+    document.querySelectorAll('.showdata-container, #main-table-wrapper, .legacy-wrapper')
+        .forEach(el => el.remove());
 }
 
 function renderView(view) {

@@ -1168,6 +1168,7 @@ function closeKpiDashboard(){
 function switchToView(viewId){
     requestAnimationFrame(()=>{
         closeAllSliders();
+        if (typeof clearMainContent === 'function') clearMainContent();
         const table = document.getElementById('tableContainer');
         if(table) table.style.display = 'none';
 
@@ -1789,6 +1790,15 @@ document.addEventListener('DOMContentLoaded', function() {
             const heatmapSuccess = forceButtonClick('heatmapBtn', () => { closeWorkflowSidebar(); window.openHeatmap(); });
             if (!heatmapSuccess) {
                 console.error('RiskMap button not found!');
+            }
+
+            const riskMapBtn = document.getElementById('heatmapBtn');
+            if (riskMapBtn) {
+                riskMapBtn.addEventListener('click', () => {
+                    closeAllSliders();
+                    renderRiskMap();
+                    highlightSidebarButton('heatmapBtn');
+                });
             }
             
             const archiveSuccess = forceButtonClick('archiveBtn', () => { closeWorkflowSidebar(); window.showArchive(); });
