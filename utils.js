@@ -558,6 +558,19 @@ window.AppUtils = {
                 data.filteredData || [],
                 data.aggregatedData || []
             );
+        },
+
+        parseImportedData: function() {
+            try {
+                const data = this.restore() || {};
+                this.riskHistory = data.riskHistory || {};
+                this.workflowEntries = data.workflowEntries || {};
+                this.notes = data.notes || {};
+                return data;
+            } catch (e) {
+                console.warn('SessionManager.parseImportedData failed', e);
+                return {};
+            }
         }
     },
 
@@ -782,6 +795,13 @@ function setupSidebarNavigation() {
     });
 }
 
+function setupSidebarButtons() {
+    document.querySelectorAll('.sidebar-btn').forEach(btn => {
+        btn.removeEventListener('click', handleSidebarNavigationClick);
+        btn.addEventListener('click', handleSidebarNavigationClick);
+    });
+}
+
 function highlightSidebarButton(buttonId) {
     document.querySelectorAll('.sidebar-btn').forEach(btn => btn.classList.remove('active'));
     const btn = document.getElementById(buttonId);
@@ -799,12 +819,13 @@ function renderRiskMap() {
 window.handleQuickNoteOpen = handleQuickNoteOpen;
 window.bindQuickNoteButtons = bindQuickNoteButtons;
 window.setupSidebarNavigation = setupSidebarNavigation;
+window.setupSidebarButtons = setupSidebarButtons;
 window.highlightSidebarButton = highlightSidebarButton;
 window.renderRiskMap = renderRiskMap;
 
 if (typeof document !== 'undefined') {
     document.addEventListener('DOMContentLoaded', () => {
         bindQuickNoteButtons();
-        setupSidebarNavigation();
+        setupSidebarButtons();
     });
 }

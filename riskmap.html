@@ -735,8 +735,10 @@
             AppUtils.handleSessionUpload(file, function(data){
                 riskmapData = (data.filteredData || []).filter(c => !c.erledigt && !c.done && !c.archived);
                 updateRiskmapDisplay();
+                if(SessionManager.parseImportedData) SessionManager.parseImportedData();
                 renderRiskMap();
                 highlightSidebarButton('heatmapBtn');
+                setupSidebarButtons();
                 showToast('✅ Session imported.');
             }, function(){
                 showToast('❌ Failed to import session.');
@@ -1624,7 +1626,10 @@
 
                 console.log('=== RiskMap File Upload SUCCESS ===');
                 showNotification(`Datei erfolgreich hochgeladen: ${extractedData.length} Kunden mit korrekten ARR-Werten verarbeitet!`);
+                if(SessionManager.parseImportedData) SessionManager.parseImportedData();
+                renderRiskMap();
                 highlightSidebarButton('heatmapBtn');
+                setupSidebarButtons();
                 uploadInProgress = false;
 
             }, function(error){
@@ -1638,7 +1643,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             console.log('=== RiskMap DOM Ready ===');
 
-            setupSidebarNavigation();
+            setupSidebarButtons();
 
             const uploadBtn = document.getElementById('uploadDataBtn');
             const uploadOptions = document.getElementById('uploadOptions');
