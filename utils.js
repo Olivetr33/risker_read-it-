@@ -791,25 +791,33 @@ function setupSidebarNavigation() {
     });
 }
 
+function clearMainContent() {
+    const contentArea = document.getElementById('mainContent');
+    if (contentArea) {
+        contentArea.innerHTML = '';
+    }
+}
+
 function renderView(view) {
     if (typeof closeAllSliders === 'function') closeAllSliders();
+    if (typeof clearMainContent === 'function') clearMainContent();
     switch (view) {
-        case 'riskMap':
-            if (typeof renderRiskMap === 'function') renderRiskMap();
-            highlightSidebarButton('heatmapBtn');
-            break;
-        case 'workflow':
-            if (typeof toggleWorkflow === 'function') toggleWorkflow();
-            highlightSidebarButton('workflowBtn');
-            break;
-        case 'topRadar':
-            if (typeof showRadarPopup === 'function') showRadarPopup();
-            highlightSidebarButton('radarSidebarBtn');
-            break;
-        case 'kpiDashboard':
-            if (typeof showKpiDashboard === 'function') showKpiDashboard();
-            highlightSidebarButton('kpiDashboardBtn');
-            break;
+    case 'riskMap':
+        if (typeof renderRiskMap === 'function') renderRiskMap();
+        highlightSidebarButton('heatmapBtn');
+        break;
+    case 'workflow':
+        if (typeof toggleWorkflow === 'function') toggleWorkflow();
+        highlightSidebarButton('workflowBtn');
+        break;
+    case 'topRadar':
+        if (typeof showRadarPopup === 'function') showRadarPopup();
+        highlightSidebarButton('radarSidebarBtn');
+        break;
+    case 'kpiDashboard':
+        if (typeof showKpiDashboard === 'function') showKpiDashboard();
+        highlightSidebarButton('kpiDashboardBtn');
+        break;
     }
 }
 
@@ -851,6 +859,7 @@ window.setupSidebarButtons = setupSidebarButtons;
 window.highlightSidebarButton = highlightSidebarButton;
 window.renderRiskMap = renderRiskMap;
 window.renderView = renderView;
+window.clearMainContent = clearMainContent;
 
 if (typeof document !== 'undefined') {
     document.addEventListener('DOMContentLoaded', () => {
