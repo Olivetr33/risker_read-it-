@@ -10,7 +10,7 @@
     "ecmaVersion": 12,
     "sourceType": "script"
   },
-  "ignorePatterns": ["vendor/**", "libs/**"],
+  "ignorePatterns": ["risker_read-it/vendor/**", "risker_read-it/libs/**"],
   "rules": {
     "indent": ["error", 4],
     "semi": ["error", "always"],

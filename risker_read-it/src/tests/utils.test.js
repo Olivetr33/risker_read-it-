@@ -1,5 +1,5 @@
 global.window = {};
-require('../utils.js');
+require('../scripts/utils.js');
 
 const { extractNumber, DataUtils } = window.AppUtils;
 
