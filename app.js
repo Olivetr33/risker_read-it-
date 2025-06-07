@@ -1225,9 +1225,12 @@ function renderKpiDashboard() {
     chartArea.className = 'chart-area';
 
     const chartWrap = document.createElement('div');
+    chartWrap.id = 'kpiChartWrapper';
     chartWrap.className = 'chart-container chart-scrollable';
-    chartWrap.style.height = Math.max(aggregatedData.length * 32, 300) + 'px';
-    chartWrap.innerHTML = '<canvas id="kpiChart"></canvas>';
+    chartWrap.style.maxHeight = 'calc(100vh - 220px)';
+    const kpiCanvas = document.createElement('canvas');
+    kpiCanvas.id = 'kpiChart';
+    chartWrap.appendChild(kpiCanvas);
     chartArea.appendChild(chartWrap);
 
     const historyWrap = document.createElement('div');
@@ -1260,7 +1263,7 @@ function renderKpiDashboard() {
         const metric = metricSelect.value;
         const labels = dashboardData.map(r => r['Customer Name']);
         const data = dashboardData.map(r => parseFloat(r[metric]) || 0);
-        chartWrap.style.height = Math.max(dashboardData.length * 32, 300) + 'px';
+        kpiCanvas.style.height = Math.max(dashboardData.length * 32, 300) + 'px';
         if (chart) chart.destroy();
         chart = new Chart(document.getElementById('kpiChart').getContext('2d'), {
             type: 'bar',
