@@ -43,7 +43,7 @@
                     <button class="sidebar-btn sidebar-btn-layout" data-target="saveCurrentSession">Save Session</button>
                     <button class="sidebar-btn sidebar-btn-layout" data-target="showArchive" id="openArchiveBtn">Archive</button>
                 </div>
-                <button class="sidebar-btn sidebar-btn-layout logout-btn footer-btn" data-target="performLogout">
+                <button class="sidebar-btn sidebar-btn-layout logout-btn footer-btn" id="logoutBtn" data-target="performLogout">
                     Logout & Clear Session
                 </button>
             </div>
@@ -774,7 +774,7 @@
         // KORRIGIERT: IDENTISCHE Spalten-Mapping wie in app.js
         const COLUMN_MAPPINGS = {
             'LCSM': ['LCSM', 'lcsm', 'Lcsm', 'LcsM', 'SACHBEARBEITER', 'sachbearbeiter', 'Sachbearbeiter', 'CSM', 'csm', 'Manager', 'manager', 'MANAGER', 'Betreuer', 'betreuer', 'BETREUER'],
-            'Customer Name': ['Customer Name', 'customer name', 'CUSTOMER NAME', 'CustomerName', 'customername', 'CUSTOMERNAME', 'Customer Number', 'customer number', 'CUSTOMER NUMBER', 'CustomerNumber', 'customernumber', 'CUSTOMERNUMBER', 'Kunde', 'kunde', 'KUNDE', 'Kundenname', 'kundenname', 'KUNDENNAME', 'Kundennummer', 'kundennummer', 'KUNDENNUMMER', 'Name', 'name', 'NAME', 'Client', 'client', 'CLIENT'],
+            'Customer Name': ['Customer Name', 'customer name', 'CUSTOMER NAME', 'CustomerName', 'customername', 'CUSTOMERNAME', 'Customer Number', 'customer number', 'CUSTOMER NUMBER', 'CustomerNumber', 'customernumber', 'CUSTOMERNUMBER', 'Kunde', 'kunde', 'KUNDE', 'Kundenname', 'kundenname', 'KUNDENNAME', 'Kundennummer', 'kundennummer', 'KUNDENNUMMER', 'Kunden Nr', 'Kunden Nr.', 'Kunden-Nr', 'KundenNr', 'KundenID', 'Kunden ID', 'Customer ID', 'customer id', 'CustomerID', 'customerid', 'Name', 'name', 'NAME', 'Client', 'client', 'CLIENT'],
             'Total Risk': ['Total Risk', 'total risk', 'TOTAL RISK', 'TotalRisk', 'totalrisk', 'TOTALRISK', 'Risk', 'risk', 'RISK', 'Risiko', 'risiko', 'RISIKO', 'Score', 'score', 'SCORE', 'Risk Score', 'risk score', 'RISK SCORE', 'RiskScore', 'riskscore', 'RISKSCORE'],
             'ARR': ['ARR', 'arr', 'Arr', 'Annual Recurring Revenue', 'annual recurring revenue', 'ANNUAL RECURRING REVENUE', 'Revenue', 'revenue', 'REVENUE', 'Umsatz', 'umsatz', 'UMSATZ', 'Vertragswert', 'vertragswert', 'VERTRAGSWERT', 'Value', 'value', 'VALUE', 'Wert', 'wert', 'WERT', 'Amount', 'amount', 'AMOUNT']
         };
@@ -964,7 +964,13 @@
         };
 
         window.performLogout = function() {
-            console.log('Logout function called from RiskMap');
+            if (!confirm('Clear all data?')) {
+                console.log('Logout cancelled by user');
+                return;
+            }
+
+            console.log('=== VOLLSTÄNDIGER Logout & Session Clear gestartet ===');
+
             try {
                 const allKeys = [
                     'riskerSessionData', 'sessionData', 'appData', 'excelData', 'userData',
@@ -972,14 +978,49 @@
                     'filteredData', 'aggregatedData', 'originalAggregatedData',
                     'headers', 'currentSort', 'selectedLCSM', 'archiveMode'
                 ];
-                
+
                 for (const key of allKeys) {
-                    localStorage.removeItem(key);
+                    try {
+                        localStorage.removeItem(key);
+                    } catch (e) {
+                        console.warn('Failed to remove key', key, e);
+                    }
                 }
-                
-                localStorage.clear();
-                sessionStorage.clear();
-                window.location.href = "index.html";
+
+                try {
+                    if (typeof Storage !== 'undefined' && window.localStorage) {
+                        Object.keys(localStorage).forEach(k => localStorage.removeItem(k));
+                    }
+                } catch (e) {
+                    console.warn('localStorage clear failed:', e);
+                }
+
+                try {
+                    if (typeof Storage !== 'undefined' && window.sessionStorage) {
+                        Object.keys(sessionStorage).forEach(k => sessionStorage.removeItem(k));
+                    }
+                } catch (e) {
+                    console.warn('sessionStorage clear failed:', e);
+                }
+
+                try {
+                    document.cookie.split(';').forEach(function(cookie) {
+                        const eqPos = cookie.indexOf('=');
+                        const name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
+                        if (name) {
+                            document.cookie = name + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/';
+                            document.cookie = name + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=' + window.location.hostname;
+                            document.cookie = name + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=.' + window.location.hostname;
+                        }
+                    });
+                } catch (e) {
+                    console.warn('Cookie clear failed:', e);
+                }
+
+                setTimeout(function() {
+                    const ts = Date.now();
+                    window.location.href = 'index.html?clear=' + ts;
+                }, 500);
             } catch (error) {
                 console.error('Logout error:', error);
                 alert('Logout failed. Please try again.');
