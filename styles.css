@@ -953,3 +953,18 @@ body {
   background-color: #1a1a1a;
   box-shadow: -2px 0 10px rgba(255,210,33,0.3);
 }
+
+#kpiChartWrapper {
+  max-height: calc(100vh - 220px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 8px;
+  margin-top: 1rem;
+  scroll-behavior: smooth;
+}
+
+#kpiChart {
+  width: 100%;
+  height: auto !important;
+  display: block;
+}

@@ -99,7 +99,11 @@
             <h2>KPI DASHBOARD</h2>
             <button id="closeKpiBtn" class="close-slider-btn">×</button>
           </div>
-          <div class="slider-content" id="kpiDashboardContent"></div>
+          <div class="slider-content" id="kpiDashboardContent">
+            <div id="kpiChartWrapper">
+              <canvas id="kpiChart"></canvas>
+            </div>
+          </div>
         </div>
     </div>
 
@@ -675,6 +679,21 @@
         #kpiDashboardContainer canvas {
             width: 100% !important;
             height: auto !important;
+        }
+
+        #kpiChartWrapper {
+            max-height: calc(100vh - 220px);
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding-right: 8px;
+            margin-top: 1rem;
+            scroll-behavior: smooth;
+        }
+
+        #kpiChart {
+            width: 100%;
+            height: auto !important;
+            display: block;
         }
 
         .sidebar-slider {
